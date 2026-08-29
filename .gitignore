@@ -1,0 +1,21 @@
+# Variables de entorno / secretos
+.env
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Compilación .NET
+**/bin/
+**/obj/
+
+# Logs
+*.log
+
+# VS Code
+.vscode/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

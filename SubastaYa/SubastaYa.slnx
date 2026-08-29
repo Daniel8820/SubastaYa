@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Application/Application.csproj" Id="14219560-ec71-49e5-b5d9-cc44752233e7" />
+  <Project Path="Domain/Domain.csproj" Id="9067acb1-989a-41a9-8d3b-cfff41a1d2a6" />
+  <Project Path="Infraestructure/Infrastructure.csproj" Id="fd24f6ef-5ea7-4085-b6a9-3edf4c43a58e" />
+  <Project Path="SubastaYa/SubastaYa.csproj" />
+</Solution>
