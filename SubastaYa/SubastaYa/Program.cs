@@ -4,13 +4,14 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+// Si pusiste la clase en una carpeta "Configuraciones", podés agregar el using acá:
+// using SubastaYa.Configuraciones; 
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Agregar servicios al contenedor.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
 
 builder.Services.AddSwaggerGen(c =>
 {
@@ -39,11 +40,14 @@ builder.Services.AddSwaggerGen(c =>
             new string[] {}
         }
     });
+
+    // NUEVO: Agregamos el filtro para la fecha dinámica en el POST de Subastas
+    // (Asegurate de que el namespace "SubastaYa.Configuraciones" coincida con donde creaste la clase)
+    c.SchemaFilter<SubastaYa.Configuraciones.SwaggerDefaultValuesFilter>();
 });
+
 builder.Services.AddScoped<Application.Interfaces.Services.ISubastaService, Application.Services.SubastaService>();
 builder.Services.AddHostedService<SubastaYa.Presentacion.Workers.SubastaCierreWorker>();
-
-
 
 // Configurar DbContext con SQL Server
 builder.Services.AddDbContext<SubastaYaDbContext>(options =>
@@ -87,9 +91,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-    app.UseHttpsRedirection();
-    // El orden correcto: primero autenticación, luego autorización
-    app.UseAuthentication();
-    app.UseAuthorization();
+app.UseHttpsRedirection();
+
+// El orden correcto: primero autenticación, luego autorización
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapControllers();
 app.Run();

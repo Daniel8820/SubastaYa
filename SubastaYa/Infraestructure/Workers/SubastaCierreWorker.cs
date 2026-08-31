@@ -1,12 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Domain.Entities;
+using Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Domain.Entities;// Asegúrense de usar sus namespaces exactos
-using Infrastructure.Persistence;
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SubastaYa.Presentacion.Workers
 {
@@ -39,12 +35,14 @@ namespace SubastaYa.Presentacion.Workers
             // 1. Buscamos subastas activas cuyo tiempo ya se agotó
             var subastasVencidas = await context.Subastas
                 .Include(s => s.Pujas)
-                .Where(s => s.Estado == "ACTIVA" && s.FechaFin <= DateTime.Now)
+                .Where(s => s.Estado == "ACTIVA" && s.FechaFin <= DateTime.UtcNow)
                 .ToListAsync();
 
             foreach (var subasta in subastasVencidas)
             {
                 var pujaGanadora = subasta.Pujas.OrderByDescending(p => p.Monto).FirstOrDefault();
+                string estadoAnterior = subasta.Estado; // Capturamos el estado original ("ACTIVA")
+                string nuevoEstado;
 
                 if (pujaGanadora != null)
                 {
@@ -60,12 +58,12 @@ namespace SubastaYa.Presentacion.Workers
                             BilleteraId = billeteraVendedor.Id,
                             Tipo = "ACREDITACION_VENTA",
                             Monto = pujaGanadora.Monto,
-                            Fecha = DateTime.Now,
+                            Fecha = DateTime.UtcNow,
                             SubastaId = subasta.Id
                         });
                     }
 
-                    // 2. NUEVO: Debitamos el saldo retenido al Comprador ganador de forma definitiva
+                    // 2. Debitamos el saldo retenido al Comprador ganador
                     var billeteraComprador = await context.Billeteras.FirstOrDefaultAsync(b => b.UsuarioId == pujaGanadora.CompradorId);
                     if (billeteraComprador != null)
                     {
@@ -75,20 +73,34 @@ namespace SubastaYa.Presentacion.Workers
                         context.TransaccionesLedger.Add(new TransaccionLedger
                         {
                             BilleteraId = billeteraComprador.Id,
-                            Tipo = "PAGO_SUBASTA", // O "DEBITO"
+                            Tipo = "PAGO_SUBASTA",
                             Monto = pujaGanadora.Monto,
-                            Fecha = DateTime.Now,
+                            Fecha = DateTime.UtcNow,
                             SubastaId = subasta.Id
                         });
                     }
 
-                    subasta.Estado = "FINALIZADA";
+                    nuevoEstado = "FINALIZADA";
                 }
                 else
                 {
                     // 3. No hubo ofertas
-                    subasta.Estado = "DESIERTA";
+                    nuevoEstado = "DESIERTA";
                 }
+
+                // Aplicamos el cambio de estado
+                subasta.Estado = nuevoEstado;
+
+                // 4. NUEVO: Registramos la auditoría de forma genérica para cualquier cambio
+                context.AuditoriaLogs.Add(new AuditoriaLog
+                {
+                    Entidad = "SUBASTA",
+                    EntidadId = subasta.Id,
+                    Accion = "CAMBIO_ESTADO",
+                    UsuarioId = null, // Representa que fue el "Sistema/Worker"
+                    DetalleJson = $"{{ \"estadoAnterior\": \"{estadoAnterior}\", \"nuevoEstado\": \"{nuevoEstado}\" }}",
+                    Fecha = DateTime.UtcNow
+                });
             }
 
             if (subastasVencidas.Any())

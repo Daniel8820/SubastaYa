@@ -1,14 +1,9 @@
 ﻿using Application.Interfaces.Services;
 using Application.Models;
-using Application.Services;
 using Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 
 namespace SubastaYa.Controllers
 {
@@ -43,7 +38,8 @@ namespace SubastaYa.Controllers
                     return Ok(new { mensaje = "Puja registrada exitosamente. Saldo retenido temporalmente." });
                 }
 
-                return BadRequest(new { error = "No se pudo procesar la puja." });
+                // ACÁ ESTÁ EL CAMBIO: Si devuelve false, sabemos con seguridad que fue por el choque de concurrencia
+                return Conflict(new { error = "Rechazo por concurrencia. Otro usuario acaba de pujar. Por favor, actualizá la subasta e intentá nuevamente." });
             }
             catch (Exception ex)
             {
@@ -63,7 +59,8 @@ namespace SubastaYa.Controllers
                 return BadRequest(new { error = "El precio base y el incremento mínimo deben ser mayores a cero." });
             }
 
-            if (request.FechaFin <= DateTime.Now)
+            // Convertimos la hora que mandó el usuario a UTC solo para hacer la comprobación
+            if (request.FechaFin.ToUniversalTime() <= DateTime.UtcNow)
             {
                 return BadRequest(new { error = "La fecha de finalización debe ser futura." });
             }
@@ -75,10 +72,11 @@ namespace SubastaYa.Controllers
                 UrlImagen = request.UrlImagen,
                 PrecioBase = request.PrecioBase,
                 IncrementoMinimo = request.IncrementoMinimo,
-                FechaInicio = DateTime.Now,
-                FechaFin = request.FechaFin,
+                FechaInicio = DateTime.UtcNow,
+                FechaFin = request.FechaFin.ToUniversalTime(),
                 Estado = "ACTIVA",
-                VendedorId = request.VendedorId
+                VendedorId = request.VendedorId,
+                CategoriaId = request.CategoriaId
             };
 
             _context.Subastas.Add(nuevaSubasta);

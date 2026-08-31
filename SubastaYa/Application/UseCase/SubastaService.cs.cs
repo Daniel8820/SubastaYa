@@ -3,6 +3,7 @@ using Application.Models;
 using Domain.Entities;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Application.Services
 {
@@ -17,13 +18,10 @@ namespace Application.Services
 
         public async Task<bool> RegistrarPujaAsync(RegistroPujaRequest request)
         {
-            // Iniciamos la transacción atómica (ACID). Si algo falla, se hace rollback automático.
             using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
-                // TODO 1: Traer la subasta de la BD y verificar estado
-                // Usamos Include para traer las Pujas actuales y evaluar la oferta líder
                 var subasta = await _context.Subastas
                     .Include(s => s.Pujas)
                     .FirstOrDefaultAsync(s => s.Id == request.SubastaId);
@@ -33,8 +31,7 @@ namespace Application.Services
                     throw new Exception("La subasta no existe.");
                 }
 
-                // Validamos que el estado sea ACTIVA y que no se haya vencido el tiempo
-                if (subasta.Estado != "ACTIVA" || subasta.FechaFin <= DateTime.Now)
+                if (subasta.Estado != "ACTIVA" || subasta.FechaFin <= DateTime.UtcNow)
                 {
                     throw new Exception("La subasta ya ha finalizado o no se encuentra activa.");
                 }
@@ -45,6 +42,19 @@ namespace Application.Services
 
                 if (request.Monto < montoMinimoRequerido)
                 {
+                    // NUEVO: Auditoría de rechazo por monto
+                    _context.AuditoriaLogs.Add(new AuditoriaLog
+                    {
+                        Entidad = "SUBASTA",
+                        EntidadId = request.SubastaId,
+                        Accion = "PUJA_RECHAZADA",
+                        UsuarioId = request.CompradorId,
+                        DetalleJson = $"{{ \"motivo\": \"Monto insuficiente. Requerido: {montoMinimoRequerido}, Intentado: {request.Monto}\" }}",
+                        Fecha = DateTime.UtcNow
+                    });
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync(); // Commiteamos el log antes de lanzar el error
+
                     throw new Exception($"El monto de la puja es inválido. Debe ser de al menos ${montoMinimoRequerido}.");
                 }
 
@@ -59,11 +69,23 @@ namespace Application.Services
 
                 if (billeteraComprador.SaldoDisponible < request.Monto)
                 {
+                    // NUEVO: Auditoría de rechazo por saldo
+                    _context.AuditoriaLogs.Add(new AuditoriaLog
+                    {
+                        Entidad = "BILLETERA",
+                        EntidadId = billeteraComprador.Id,
+                        Accion = "PUJA_RECHAZADA",
+                        UsuarioId = request.CompradorId,
+                        DetalleJson = $"{{ \"motivo\": \"Saldo insuficiente. Disponible: {billeteraComprador.SaldoDisponible}, Intentado: {request.Monto}\" }}",
+                        Fecha = DateTime.UtcNow
+                    });
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
                     throw new Exception("Saldo insuficiente para realizar esta puja.");
                 }
 
                 // TODO 4: LÓGICA DE ESCROW (Garantía)
-                // 4.1. Devolver el dinero al comprador anterior (si existe)
                 var pujaAnterior = subasta.Pujas.OrderByDescending(p => p.Monto).FirstOrDefault();
                 if (pujaAnterior != null)
                 {
@@ -72,43 +94,49 @@ namespace Application.Services
 
                     if (billeteraAnterior != null)
                     {
-                        // Liberamos los fondos del perdedor
                         billeteraAnterior.SaldoRetenido -= pujaAnterior.Monto;
                         billeteraAnterior.SaldoDisponible += pujaAnterior.Monto;
 
-                        // TODO 6: Registro en el Ledger para la devolución
                         _context.TransaccionesLedger.Add(new TransaccionLedger
                         {
                             BilleteraId = billeteraAnterior.Id,
                             Tipo = "LIBERACION",
                             Monto = pujaAnterior.Monto,
-                            Fecha = DateTime.Now,
+                            Fecha = DateTime.UtcNow,
                             SubastaId = subasta.Id
                         });
                     }
                 }
 
-                // 4.2. Retener los fondos del nuevo comprador
                 billeteraComprador.SaldoDisponible -= request.Monto;
                 billeteraComprador.SaldoRetenido += request.Monto;
 
-                // Registro en el Ledger para la nueva retención
                 _context.TransaccionesLedger.Add(new TransaccionLedger
                 {
                     BilleteraId = billeteraComprador.Id,
                     Tipo = "RETENCION",
                     Monto = request.Monto,
-                    Fecha = DateTime.Now,
+                    Fecha = DateTime.UtcNow,
                     SubastaId = subasta.Id
                 });
 
-                // TODO 5: REGLA ANTI-SNIPING
-                var tiempoRestante = subasta.FechaFin - DateTime.Now;
-                if (tiempoRestante.TotalMinutes < 1)
+                // TODO 5: REGLA ANTI-SNIPING CON AUDITORÍA
+                var tiempoRestante = subasta.FechaFin - DateTime.UtcNow;
+
+                if (tiempoRestante.TotalSeconds > 0 && tiempoRestante.TotalSeconds <= 60)
                 {
                     subasta.FechaFin = subasta.FechaFin.AddMinutes(2);
 
-                    // Opcional: Podrían agregar un registro en AuditoriaLogs acá para dejar rastro de la extensión
+                    // NUEVO: Auditoría de extensión
+                    _context.AuditoriaLogs.Add(new AuditoriaLog
+                    {
+                        Entidad = "SUBASTA",
+                        EntidadId = subasta.Id,
+                        Accion = "EXTENSION_ANTI_SNIPING",
+                        UsuarioId = request.CompradorId,
+                        DetalleJson = $"{{ \"mensaje\": \"Extensión automática por oferta en último minuto\", \"nuevaFechaFin\": \"{subasta.FechaFin}\" }}",
+                        Fecha = DateTime.UtcNow
+                    });
                 }
 
                 // TODO 7: Crear y registrar la nueva Puja
@@ -117,27 +145,62 @@ namespace Application.Services
                     SubastaId = subasta.Id,
                     CompradorId = request.CompradorId,
                     Monto = request.Monto,
-                    FechaPuja = DateTime.Now
+                    FechaPuja = DateTime.UtcNow
                 };
 
                 _context.Pujas.Add(nuevaPuja);
 
-                // Guardamos los cambios. Aquí EF Core validará el Optimistic Locking (el campo Version).
-                await _context.SaveChangesAsync();
+                subasta.Version++;
 
-                await transaction.CommitAsync();
-                return true;
+                try
+                {
+                    // 1. Intentamos guardar la puja, los saldos y la nueva versión de la subasta
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    return true; // O el objeto que devuelva tu método en caso de éxito
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    // 2. ¡Choque detectado! Dos usuarios pujaron a la vez. Abortamos la transacción original.
+                    await transaction.RollbackAsync();
+
+                    // 3. ¡CRÍTICO! Limpiamos el ChangeTracker para que EF Core "olvide" 
+                    // la puja fallida y los cálculos de saldo erróneos.
+                    _context.ChangeTracker.Clear();
+
+                    // 4. Armamos el registro para la auditoría (Requisito cumplido)
+                    var logConcurrencia = new AuditoriaLog
+                    {
+                        Entidad = "SUBASTA",
+                        EntidadId = subasta.Id,
+                        Accion = "PUJA_RECHAZADA_CONCURRENCIA",
+                        UsuarioId = request.CompradorId,
+                        DetalleJson = $"{{ \"mensaje\": \"Rechazo por concurrencia. Otro usuario pujó al mismo tiempo.\", \"montoIntentado\": {request.Monto} }}",
+                        Fecha = DateTime.UtcNow
+                    };
+
+                    _context.AuditoriaLogs.Add(logConcurrencia);
+
+                    // 5. Guardamos el log tranquilamente en una operación limpia
+                    await _context.SaveChangesAsync();
+
+                    // 6. Retornamos falso (o podés lanzar una excepción de negocio si tu controller lo maneja así)
+                    return false;
+                }
             }
             catch (DbUpdateConcurrencyException)
             {
-                // Si EF Core detecta que alguien más modificó la subasta o la billetera en el mismo instante
                 await transaction.RollbackAsync();
                 throw new Exception("Conflicto de concurrencia: la subasta fue modificada por otro usuario.");
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
-                // Aquí podrían loguear el error o usar el AuditoriaLog
+                // Si la excepción no fue lanzada por nuestras validaciones (que ya commitearon el log), hacemos rollback general.
+                // Como los throw de arriba tiran excepciones genéricas ("Exception"), acá podríamos loguear un error inesperado.
+                if (transaction.GetDbTransaction().Connection != null)
+                {
+                    await transaction.RollbackAsync();
+                }
                 throw;
             }
         }

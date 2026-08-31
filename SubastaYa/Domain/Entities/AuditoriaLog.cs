@@ -22,6 +22,6 @@
         public DateTime Fecha { get; set; }
 
         // Propiedad de navegación
-        public Usuario Usuario { get; set; }
+        public Usuario? Usuario { get; set; }
     }
 }
