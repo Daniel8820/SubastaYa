@@ -1,10 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Application.Models;
+using Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.IdentityModel.Tokens.Jwt;
-using System.Threading.Tasks;
-using Infrastructure.Persistence;
-using Application.Models;
 
 namespace SubastaYa.Presentacion.Controllers
 {
@@ -79,22 +77,36 @@ namespace SubastaYa.Presentacion.Controllers
                 return NotFound(new { error = "No se encontró una billetera asociada a este usuario." });
             }
 
-            // 1. Acreditación sumando al saldo total
+            // 1. Acreditación sumando al saldo total y al disponible
             billetera.SaldoTotal += request.Monto;
+            billetera.SaldoDisponible += request.Monto;
 
-            // 2. NUEVO: Registramos el movimiento en el Ledger para el historial
-            var movimiento = new Domain.Entities.TransaccionLedger // (Ajustá el namespace si es necesario)
+            // 2. Registramos el movimiento en el Ledger para el historial
+            var movimiento = new Domain.Entities.TransaccionLedger
             {
                 BilleteraId = billetera.Id,
                 Tipo = "DEPOSITO",
                 Monto = request.Monto,
-                Fecha = DateTime.Now
-                // SubastaId queda en null porque es un depósito, no una puja
+                // Pequeño tip: DateTime.UtcNow ya es universal, no hace falta el .ToUniversalTime()
+                Fecha = DateTime.UtcNow,
             };
 
             _context.TransaccionesLedger.Add(movimiento);
 
-            // Guardamos ambos cambios (el saldo y el historial) en una sola transacción
+            // 3. NUEVO: Registramos la auditoría de la acreditación manual
+            var logAuditoria = new Domain.Entities.AuditoriaLog
+            {
+                Entidad = "BILLETERA",
+                EntidadId = billetera.Id,
+                Accion = "ACREDITACION_MANUAL",
+                UsuarioId = usuarioId, // Queda el registro exacto del dueño del token
+                DetalleJson = $"{{ \"montoDepositado\": {request.Monto}, \"nuevoSaldo\": {billetera.SaldoDisponible} }}",
+                Fecha = DateTime.UtcNow
+            };
+
+            _context.AuditoriaLogs.Add(logAuditoria);
+
+            // Guardamos todos los cambios (el saldo, el ledger y la auditoría) en una sola transacción
             await _context.SaveChangesAsync();
 
             return Ok(new
