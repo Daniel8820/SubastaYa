@@ -1,9 +1,10 @@
-using Microsoft.OpenApi.Models;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
+
 // Si pusiste la clase en una carpeta "Configuraciones", podés agregar el using acá:
 // using SubastaYa.Configuraciones; 
 
@@ -12,7 +13,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Agregar servicios al contenedor.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "SubastaYa API", Version = "v1" });
@@ -46,12 +46,23 @@ builder.Services.AddSwaggerGen(c =>
     c.SchemaFilter<SubastaYa.Configuraciones.SwaggerDefaultValuesFilter>();
 });
 
-builder.Services.AddScoped<Application.Interfaces.Services.ISubastaService, Application.Services.SubastaService>();
+// Registro del Handler de CQRS
+builder.Services.AddScoped<Application.UseCases.Subastas.Handlers.RegistrarPujaCommandHandler>();
 builder.Services.AddHostedService<SubastaYa.Presentacion.Workers.SubastaCierreWorker>();
 
 // Configurar DbContext con SQL Server
 builder.Services.AddDbContext<SubastaYaDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// -------------------------------------------------------------------------
+// NUEVO: Registro de Repositorios y Unit of Work para la Arquitectura Limpia
+// -------------------------------------------------------------------------
+builder.Services.AddScoped<Application.Interfaces.ISubastaRepository, Infrastructure.Persistence.Repositories.SubastaRepository>();
+builder.Services.AddScoped<Application.Interfaces.IBilleteraRepository, Infrastructure.Persistence.Repositories.BilleteraRepository>();
+builder.Services.AddScoped<Application.Interfaces.IUnitOfWork, Infrastructure.Persistence.UnitOfWork>();
+// -------------------------------------------------------------------------
+
+
 
 // Leemos la configuración del appsettings
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -84,7 +95,9 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Configurar el pipeline de solicitudes HTTP.
+// Registramos nuestro middleware global de excepciones al inicio del pipeline
+app.UseMiddleware<SubastaYa.Middlewares.ExceptionMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -92,10 +105,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-// El orden correcto: primero autenticación, luego autorización
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
+
 app.Run();
