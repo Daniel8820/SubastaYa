@@ -10,14 +10,19 @@ namespace Application.UseCases.Subastas.Handlers
         private readonly IBilleteraRepository _billeteraRepository;
         private readonly IUnitOfWork _unitOfWork;
 
+        // notificador de WebSockets
+        private readonly INotificadorSubastas _notificador;
+
         public RegistrarPujaCommandHandler(
             ISubastaRepository subastaRepository,
             IBilleteraRepository billeteraRepository,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            INotificadorSubastas notificador)
         {
             _subastaRepository = subastaRepository;
             _billeteraRepository = billeteraRepository;
             _unitOfWork = unitOfWork;
+            _notificador = notificador;
         }
 
         // Ahora recibe el Command que viene directo del Controller
@@ -90,11 +95,16 @@ namespace Application.UseCases.Subastas.Handlers
             {
                 // Guardamos todo de forma atómica usando el Unit of Work
                 await _unitOfWork.SaveChangesAsync();
+
+                // Disparamos el evento a los WebSockets SOLO si el guardado en BD fue exitoso.
+                // Como acá no tenemos el nombre completo cargado, mandamos el ID para el front.
+                await _notificador.NotificarNuevaPujaAsync(command.SubastaId, command.Monto, $"Usuario {command.CompradorId}");
+
                 return true;
             }
             catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
             {
-                // Si hay choque de concurrencia optimista, devolvemos false para que el controller tire el 409
+                // Si hay choque de concurrencia optimista, devolvemos false para que el controller devuelva 409
                 return false;
             }
         }
