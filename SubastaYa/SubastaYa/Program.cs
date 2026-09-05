@@ -46,8 +46,13 @@ builder.Services.AddSwaggerGen(c =>
     c.SchemaFilter<SubastaYa.Configuraciones.SwaggerDefaultValuesFilter>();
 });
 
-// Registro del Handler de CQRS
+// Registro de los Handlers de CQRS
 builder.Services.AddScoped<Application.UseCases.Subastas.Handlers.RegistrarPujaCommandHandler>();
+builder.Services.AddScoped<Application.UseCases.Usuarios.Handlers.GetMisActividadesQueryHandler>();
+builder.Services.AddScoped<Application.UseCases.Wallet.Handlers.ObtenerHistorialQueryHandler>();
+builder.Services.AddScoped<Application.UseCases.Wallet.Handlers.DepositarFondosCommandHandler>();
+
+//Worker
 builder.Services.AddHostedService<SubastaYa.Presentacion.Workers.SubastaCierreWorker>();
 
 // Configurar DbContext con SQL Server
