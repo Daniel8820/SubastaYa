@@ -1,4 +1,5 @@
 ﻿using Application.Interfaces;
+using Application.Mappings;
 using Application.Models;
 using Application.UseCases.Wallet.Queries;
 using Domain.Exceptions;
@@ -19,12 +20,7 @@ namespace Application.UseCases.Wallet.Handlers
             var billetera = await _billeteraRepository.ObtenerPorUsuarioIdAsync(query.UsuarioId);
             if (billetera == null) throw new DomainException("No se encontró una billetera asociada a este usuario.");
 
-            return new SaldoResponseDto
-            {
-                Total = billetera.SaldoTotal,
-                Retenido = billetera.SaldoRetenido,
-                Disponible = billetera.SaldoTotal - billetera.SaldoRetenido
-            };
+            return billetera.ToSaldoDto();
         }
     }
 }
