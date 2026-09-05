@@ -1,6 +1,6 @@
-﻿namespace Application.Models
+﻿namespace Application.UseCases.Subastas.Commands
 {
-    public class CrearSubastaRequest
+    public class CrearSubastaCommand
     {
         public string Titulo { get; set; }
         public string Descripcion { get; set; }

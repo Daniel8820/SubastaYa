@@ -51,6 +51,9 @@ builder.Services.AddScoped<Application.UseCases.Subastas.Handlers.RegistrarPujaC
 builder.Services.AddScoped<Application.UseCases.Usuarios.Handlers.GetMisActividadesQueryHandler>();
 builder.Services.AddScoped<Application.UseCases.Wallet.Handlers.ObtenerHistorialQueryHandler>();
 builder.Services.AddScoped<Application.UseCases.Wallet.Handlers.DepositarFondosCommandHandler>();
+builder.Services.AddScoped<Application.UseCases.Subastas.Handlers.CrearSubastaCommandHandler>();
+builder.Services.AddScoped<Application.UseCases.Subastas.Handlers.GetSubastaByIdQueryHandler>();
+builder.Services.AddScoped<Application.UseCases.Subastas.Handlers.GetCatalogoSubastasQueryHandler>();
 
 //Worker
 builder.Services.AddHostedService<SubastaYa.Presentacion.Workers.SubastaCierreWorker>();

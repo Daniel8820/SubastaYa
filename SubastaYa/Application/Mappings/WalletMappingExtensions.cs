@@ -16,5 +16,15 @@ namespace Application.Mappings
                 SubastaId = transaccion.SubastaId
             };
         }
+
+        public static SaldoResponseDto ToSaldoDto(this Billetera billetera)
+        {
+            return new SaldoResponseDto
+            {
+                Total = billetera.SaldoTotal,
+                Retenido = billetera.SaldoRetenido,
+                Disponible = billetera.SaldoDisponible
+            };
+        }
     }
 }
