@@ -91,44 +91,6 @@ namespace Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Billeteras");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            SaldoDisponible = 0m,
-                            SaldoRetenido = 0m,
-                            SaldoTotal = 0m,
-                            UsuarioId = 1,
-                            Version = 1
-                        },
-                        new
-                        {
-                            Id = 2,
-                            SaldoDisponible = 105000m,
-                            SaldoRetenido = 45000m,
-                            SaldoTotal = 150000m,
-                            UsuarioId = 2,
-                            Version = 1
-                        },
-                        new
-                        {
-                            Id = 3,
-                            SaldoDisponible = 200000m,
-                            SaldoRetenido = 0m,
-                            SaldoTotal = 200000m,
-                            UsuarioId = 3,
-                            Version = 1
-                        },
-                        new
-                        {
-                            Id = 4,
-                            SaldoDisponible = 500m,
-                            SaldoRetenido = 0m,
-                            SaldoTotal = 500m,
-                            UsuarioId = 4,
-                            Version = 1
-                        });
                 });
 
             modelBuilder.Entity("Domain.Entities.Categoria", b =>
@@ -150,32 +112,6 @@ namespace Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Categorias");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Nombre = "Tecnología",
-                            UrlIcono = "tech.png"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Nombre = "Coleccionables",
-                            UrlIcono = "col.png"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Nombre = "Indumentaria",
-                            UrlIcono = "ropa.png"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Nombre = "Vehículos",
-                            UrlIcono = "auto.png"
-                        });
                 });
 
             modelBuilder.Entity("Domain.Entities.Puja", b =>
@@ -206,32 +142,6 @@ namespace Infrastructure.Migrations
                     b.HasIndex("SubastaId");
 
                     b.ToTable("Pujas");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CompradorId = 2,
-                            FechaPuja = new DateTime(2026, 8, 29, 11, 20, 0, 0, DateTimeKind.Unspecified),
-                            Monto = 35000m,
-                            SubastaId = 1
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CompradorId = 2,
-                            FechaPuja = new DateTime(2026, 8, 29, 11, 40, 0, 0, DateTimeKind.Unspecified),
-                            Monto = 45000m,
-                            SubastaId = 1
-                        },
-                        new
-                        {
-                            Id = 3,
-                            CompradorId = 3,
-                            FechaPuja = new DateTime(2026, 8, 27, 12, 0, 0, 0, DateTimeKind.Unspecified),
-                            Monto = 25000m,
-                            SubastaId = 4
-                        });
                 });
 
             modelBuilder.Entity("Domain.Entities.Subasta", b =>
@@ -289,83 +199,6 @@ namespace Infrastructure.Migrations
                     b.HasIndex("VendedorId");
 
                     b.ToTable("Subastas");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CategoriaId = 1,
-                            Descripcion = "Activa estándar",
-                            Estado = "ACTIVA",
-                            FechaFin = new DateTime(2026, 8, 29, 12, 30, 0, 0, DateTimeKind.Unspecified),
-                            FechaInicio = new DateTime(2026, 8, 29, 11, 0, 0, 0, DateTimeKind.Unspecified),
-                            IncrementoMinimo = 1000m,
-                            PrecioBase = 30000m,
-                            Titulo = "Notebook Pro",
-                            UrlImagen = "img1.png",
-                            VendedorId = 1,
-                            Version = 1
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CategoriaId = 2,
-                            Descripcion = "Activa crítica",
-                            Estado = "ACTIVA",
-                            FechaFin = new DateTime(2026, 8, 29, 12, 1, 0, 0, DateTimeKind.Unspecified),
-                            FechaInicio = new DateTime(2026, 8, 29, 10, 0, 0, 0, DateTimeKind.Unspecified),
-                            IncrementoMinimo = 500m,
-                            PrecioBase = 10000m,
-                            Titulo = "Reloj Antiguo",
-                            UrlImagen = "img2.png",
-                            VendedorId = 1,
-                            Version = 1
-                        },
-                        new
-                        {
-                            Id = 3,
-                            CategoriaId = 4,
-                            Descripcion = "Inicia mañana",
-                            Estado = "PROGRAMADA",
-                            FechaFin = new DateTime(2026, 8, 31, 12, 0, 0, 0, DateTimeKind.Unspecified),
-                            FechaInicio = new DateTime(2026, 8, 30, 12, 0, 0, 0, DateTimeKind.Unspecified),
-                            IncrementoMinimo = 50000m,
-                            PrecioBase = 1500000m,
-                            Titulo = "Auto Usado",
-                            UrlImagen = "img3.png",
-                            VendedorId = 1,
-                            Version = 1
-                        },
-                        new
-                        {
-                            Id = 4,
-                            CategoriaId = 1,
-                            Descripcion = "Para liquidar",
-                            Estado = "ACTIVA",
-                            FechaFin = new DateTime(2026, 8, 28, 12, 0, 0, 0, DateTimeKind.Unspecified),
-                            FechaInicio = new DateTime(2026, 8, 26, 12, 0, 0, 0, DateTimeKind.Unspecified),
-                            IncrementoMinimo = 1000m,
-                            PrecioBase = 20000m,
-                            Titulo = "Monitor 24",
-                            UrlImagen = "img4.png",
-                            VendedorId = 1,
-                            Version = 1
-                        },
-                        new
-                        {
-                            Id = 5,
-                            CategoriaId = 3,
-                            Descripcion = "Nadie ofertó",
-                            Estado = "ACTIVA",
-                            FechaFin = new DateTime(2026, 8, 27, 12, 0, 0, 0, DateTimeKind.Unspecified),
-                            FechaInicio = new DateTime(2026, 8, 24, 12, 0, 0, 0, DateTimeKind.Unspecified),
-                            IncrementoMinimo = 2000m,
-                            PrecioBase = 50000m,
-                            Titulo = "Campera Cuero",
-                            UrlImagen = "img5.png",
-                            VendedorId = 1,
-                            Version = 1
-                        });
                 });
 
             modelBuilder.Entity("Domain.Entities.TransaccionLedger", b =>
@@ -400,25 +233,6 @@ namespace Infrastructure.Migrations
                     b.HasIndex("SubastaId");
 
                     b.ToTable("TransaccionesLedger");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            BilleteraId = 2,
-                            Fecha = new DateTime(2026, 8, 25, 12, 0, 0, 0, DateTimeKind.Unspecified),
-                            Monto = 150000m,
-                            Tipo = "DEPOSITO"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            BilleteraId = 2,
-                            Fecha = new DateTime(2026, 8, 29, 11, 40, 0, 0, DateTimeKind.Unspecified),
-                            Monto = 45000m,
-                            SubastaId = 1,
-                            Tipo = "RETENCION"
-                        });
                 });
 
             modelBuilder.Entity("Domain.Entities.Usuario", b =>
@@ -429,58 +243,204 @@ namespace Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Email")
-                        .IsRequired()
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("bit");
 
                     b.Property<DateTime>("FechaRegistro")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("NormalizedEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("NormalizedUserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
                     b.Property<string>("PasswordHash")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SecurityStamp")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Usuarios");
+                    b.HasIndex("NormalizedEmail")
+                        .HasDatabaseName("EmailIndex");
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Email = "vendedor@test.com",
-                            FechaRegistro = new DateTime(2026, 8, 19, 12, 0, 0, 0, DateTimeKind.Unspecified),
-                            Nombre = "Vendedor",
-                            PasswordHash = "hash123"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Email = "comprador1@test.com",
-                            FechaRegistro = new DateTime(2026, 8, 24, 12, 0, 0, 0, DateTimeKind.Unspecified),
-                            Nombre = "Comprador 1",
-                            PasswordHash = "hash123"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Email = "comprador2@test.com",
-                            FechaRegistro = new DateTime(2026, 8, 27, 12, 0, 0, 0, DateTimeKind.Unspecified),
-                            Nombre = "Comprador 2",
-                            PasswordHash = "hash123"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Email = "sinfondos@test.com",
-                            FechaRegistro = new DateTime(2026, 8, 28, 12, 0, 0, 0, DateTimeKind.Unspecified),
-                            Nombre = "Sin Fondos",
-                            PasswordHash = "hash123"
-                        });
+                    b.HasIndex("NormalizedUserName")
+                        .IsUnique()
+                        .HasDatabaseName("UserNameIndex")
+                        .HasFilter("[NormalizedUserName] IS NOT NULL");
+
+                    b.ToTable("Usuarios", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<int>", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("NormalizedName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique()
+                        .HasDatabaseName("RoleNameIndex")
+                        .HasFilter("[NormalizedName] IS NOT NULL");
+
+                    b.ToTable("AspNetRoles", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClaimType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ClaimValue")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("RoleId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("AspNetRoleClaims", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<int>", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClaimType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ClaimValue")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AspNetUserClaims", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<int>", b =>
+                {
+                    b.Property<string>("LoginProvider")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ProviderKey")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ProviderDisplayName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("LoginProvider", "ProviderKey");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AspNetUserLogins", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<int>", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RoleId")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserId", "RoleId");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("AspNetUserRoles", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<int>", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LoginProvider")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Value")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UserId", "LoginProvider", "Name");
+
+                    b.ToTable("AspNetUserTokens", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.AuditoriaLog", b =>
@@ -556,6 +516,57 @@ namespace Infrastructure.Migrations
                     b.Navigation("Billetera");
 
                     b.Navigation("Subasta");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<int>", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<int>", b =>
+                {
+                    b.HasOne("Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<int>", b =>
+                {
+                    b.HasOne("Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<int>", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<int>", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<int>", b =>
+                {
+                    b.HasOne("Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.Entities.Categoria", b =>

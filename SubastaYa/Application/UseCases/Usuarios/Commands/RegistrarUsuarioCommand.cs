@@ -1,4 +1,4 @@
-﻿namespace Application.UseCases.Auth.Commands
+﻿namespace Application.UseCases.Usuarios.Commands
 {
     public class RegistrarUsuarioCommand
     {

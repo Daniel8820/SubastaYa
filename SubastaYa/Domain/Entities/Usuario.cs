@@ -1,11 +1,13 @@
-﻿namespace Domain.Entities
+﻿using Microsoft.AspNetCore.Identity;
+
+namespace Domain.Entities
 {
-    public class Usuario
+    // Heredamos de IdentityUser<int> para que el ID siga siendo numérico
+    public class Usuario : IdentityUser<int>
     {
-        public int Id { get; set; }
-        public string Email { get; set; }
+        // El Id, Email y PasswordHash ya vienen incluidos de fábrica en IdentityUser.
+        // Solo agregamos las propiedades extra que son de nuestro negocio:
         public string Nombre { get; set; }
-        public string PasswordHash { get; set; }
         public DateTime FechaRegistro { get; set; }
 
         // Relación 1:1 con Billetera
