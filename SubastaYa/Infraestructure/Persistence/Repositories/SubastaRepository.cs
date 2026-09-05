@@ -27,5 +27,21 @@ namespace Infrastructure.Persistence.Repositories
         {
             _context.Subastas.Update(subasta);
         }
+
+        public async Task<List<Domain.Entities.Subasta>> ObtenerPorVendedorIdAsync(int vendedorId)
+        {
+            return await _context.Subastas
+                .Include(s => s.Pujas)
+                .Where(s => s.VendedorId == vendedorId)
+                .ToListAsync();
+        }
+
+        public async Task<List<Domain.Entities.Subasta>> ObtenerPorCompradorIdAsync(int compradorId)
+        {
+            return await _context.Subastas
+                .Include(s => s.Pujas)
+                .Where(s => s.Pujas.Any(p => p.CompradorId == compradorId))
+                .ToListAsync();
+        }
     }
 }
