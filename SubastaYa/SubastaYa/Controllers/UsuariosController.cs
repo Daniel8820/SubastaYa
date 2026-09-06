@@ -42,5 +42,28 @@ namespace SubastaYa.Controllers
 
             return Ok(resultado);
         }
+
+        [HttpPut("me/profile")]
+        public async Task<IActionResult> ActualizarPerfil(
+            [FromBody] Application.UseCases.Usuarios.Commands.ActualizarPerfilCommand command,
+            [FromServices] Application.UseCases.Usuarios.Handlers.ActualizarPerfilCommandHandler handler)
+        {
+            // Obligamos a que el ID sea el del token actual
+            command.UsuarioId = ObtenerUsuarioIdDelToken();
+
+            await handler.HandleAsync(command);
+            return Ok(new { mensaje = "Perfil actualizado exitosamente." });
+        }
+
+        [HttpPut("me/password")]
+        public async Task<IActionResult> CambiarPassword(
+            [FromBody] Application.UseCases.Usuarios.Commands.CambiarPasswordCommand command,
+            [FromServices] Application.UseCases.Usuarios.Handlers.CambiarPasswordCommandHandler handler)
+        {
+            command.UsuarioId = ObtenerUsuarioIdDelToken();
+
+            await handler.HandleAsync(command);
+            return Ok(new { mensaje = "Contraseña cambiada exitosamente." });
+        }
     }
 }

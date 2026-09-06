@@ -91,5 +91,26 @@ namespace SubastaYa.Controllers
             var response = await handler.HandleAsync(query);
             return Ok(response);
         }
+
+        [Authorize]
+        [HttpPatch("{id}/cancel")]
+        public async Task<IActionResult> CancelarSubasta(
+            int id,
+            [FromServices] Application.UseCases.Subastas.Handlers.CancelarSubastaCommandHandler handler)
+        {
+            // Extraemos el ID del usuario directamente desde el token (Igual que en UsuariosController)
+            var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                       ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+
+            var command = new Application.UseCases.Subastas.Commands.CancelarSubastaCommand
+            {
+                SubastaId = id,
+                VendedorId = int.Parse(claimId)
+            };
+
+            await handler.HandleAsync(command);
+
+            return Ok(new { mensaje = "La subasta fue cancelada exitosamente." });
+        }
     }
 }

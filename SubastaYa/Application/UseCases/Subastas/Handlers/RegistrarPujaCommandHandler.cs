@@ -35,7 +35,14 @@ namespace Application.UseCases.Subastas.Handlers
             if (subasta.Estado != "ACTIVA" || subasta.FechaFin <= DateTime.UtcNow)
                 throw new DomainException("La subasta ya ha finalizado o no se encuentra activa.");
 
-            // 1. Validar el monto de la oferta y el incremento mínimo
+            // 1. Regla Anti Auto-Puja
+            var pujaGanadoraActual = subasta.Pujas.OrderByDescending(p => p.Monto).FirstOrDefault();
+            if (pujaGanadoraActual != null && pujaGanadoraActual.CompradorId == command.CompradorId)
+            {
+                throw new DomainException("Ya posees la oferta más alta en esta subasta. No puedes pujar contra ti mismo.");
+            }
+
+            // 2. Validar el monto de la oferta y el incremento mínimo
             var ofertaMasAlta = subasta.Pujas.Any() ? subasta.Pujas.Max(p => p.Monto) : subasta.PrecioBase;
             var montoMinimoRequerido = subasta.Pujas.Any() ? ofertaMasAlta + subasta.IncrementoMinimo : subasta.PrecioBase;
 
@@ -48,13 +55,13 @@ namespace Application.UseCases.Subastas.Handlers
             if (billeteraComprador == null)
                 throw new DomainException("El comprador no tiene una billetera asociada.");
 
-            // 2. Validar saldo disponible
+            // 3. Validar saldo disponible
             if (billeteraComprador.SaldoDisponible < command.Monto)
             {
                 throw new DomainException("Saldo insuficiente para realizar esta puja.");
             }
 
-            // 3. Lógica de Escrow (Garantía) - Liberar anterior y retener nuevo
+            // 4. Lógica de Escrow (Garantía) - Liberar anterior y retener nuevo
             var pujaAnterior = subasta.Pujas.OrderByDescending(p => p.Monto).FirstOrDefault();
             if (pujaAnterior != null)
             {
@@ -72,14 +79,14 @@ namespace Application.UseCases.Subastas.Handlers
 
             _billeteraRepository.Actualizar(billeteraComprador);
 
-            // 4. Regla Anti-Sniping
+            // 5. Regla Anti-Sniping
             var tiempoRestante = subasta.FechaFin - DateTime.UtcNow;
             if (tiempoRestante.TotalSeconds > 0 && tiempoRestante.TotalSeconds <= 60)
             {
                 subasta.FechaFin = subasta.FechaFin.AddMinutes(2);
             }
 
-            // 5. Registrar la nueva Puja en la subasta
+            // 6. Registrar la nueva Puja en la subasta
             subasta.Pujas.Add(new Domain.Entities.Puja
             {
                 SubastaId = subasta.Id,
