@@ -15,7 +15,10 @@ namespace Infrastructure.Persistence.Repositories
 
         public async Task<Subasta?> ObtenerPorIdAsync(int id)
         {
-            return await _context.Subastas.FindAsync(id);
+            // Cambiamos el FindAsync por un FirstOrDefault con Include para traer las pujas sí o sí
+            return await _context.Subastas
+                .Include(s => s.Pujas)
+                .FirstOrDefaultAsync(s => s.Id == id);
         }
 
         public async Task AgregarAsync(Subasta subasta)

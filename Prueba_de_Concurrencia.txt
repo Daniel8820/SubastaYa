@@ -1,0 +1,24 @@
+$ curl -k -i -X POST https://localhost:7109/api/v1/auctions/1002/bids -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZW1haWwiOiJjb21wcmFkb3IxQHRlc3QuY29tIiwibm9tYnJlIjoiQ29tcHJhZG9yIDEiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJVc2VyIiwiZXhwIjoxNzg4NzM1NDk4LCJpc3MiOiJTdWJhc3RhWWFBUEkiLCJhdWQiOiJTdWJhc3RhWWFVc2VycyJ9.Z7UMjnukRrPAcE2rA1hSXWAaemRA_Kdpgcm-Y-25t7w" -H "Content-Type: application/json" -d '{"compradorId": 2, "monto": 70000}' & curl -k -i -X POST https://localhost:7109/api/v1/auctions/1002/bids -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdW
+IiOiIzIiwiZW1haWwiOiJjb21wcmFkb3IyQHRlc3QuY29tIiwibm9tYnJlIjoiQ29tcHJhZG9yIDIiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJVc2VyIiwiZXhwIjoxNzg4NzM1NDU0LCJpc3MiOiJTdWJhc3RhWWFB
+UEkiLCJhdWQiOiJTdWJhc3RhWWFVc2VycyJ9.z0O_zTWutsi7iAF_rKRWUS9LsszjK33K87FKOZ1V1V8" -H "Content-Type: application/json" -d '{"compradorId": 3, "monto": 70000}' & wait
+
+Devolución:
+
+[1] 34
+[2] 35
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Date: Sun, 06 Sep 2026 21:08:46 GMT
+Server: Kestrel
+Transfer-Encoding: chunked
+{"mensaje":"Puja registrada exitosamente. Saldo retenido temporalmente."}HTTP/1.1 409 Conflict
+Content-Type: application/json; charset=utf-8
+Date: Sun, 06 Sep 2026 21:08:46 GMT
+Server: Kestrel
+Transfer-Encoding: chunked
+
+{"error":"Rechazo por concurrencia. Otro usuario acaba de pujar, por favor actualizá la subasta e intentá nuevamente."}[1]-  Done                       curl -k -i -X POST https://localhost:7109/api/v1/auctions/1002/bids -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZW1haWwiOiJjb21wcmFkb3IxQHRlc3QuY29tIiwibm9tYnJlIjoiQ29tcHJhZG9yIDEiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJVc2VyIiwiZXhwIjoxNzg4NzM1NDk4LCJpc3MiOiJTdWJhc3RhWWFBUEkiLCJhdWQiOiJTdWJhc3RhWWFVc2VycyJ9.Z7UMjnukRrPAcE2rA1hSXWAaemRA_Kdpgcm-Y-25t7w" -H "Content-Type: application/json" -d '{"compradorId": 2, "monto": 70000}'
+
+Conclusión:
+
+Para validar el cumplimiento del requerimiento de Concurrencia Optimista, se realizaron pruebas de estrés mediante ejecución en paralelo de solicitudes idénticas dirigidas al mismo recurso (Endpoint de registro de pujas). Utilizando control de versiones a nivel de entidad en Entity Framework Core, se comprobó que la primera transacción modifica el registro actualizando su token de concurrencia, mientras que la segunda transacción (al intentar impactar sobre una versión obsoleta) detecta el conflicto de estado, aborta la operación y retorna un HTTP 409 Conflict, garantizando la integridad transaccional de la subasta.
