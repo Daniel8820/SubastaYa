@@ -91,5 +91,10 @@ namespace Infrastructure.Persistence.Repositories
 
             return (items, totalItems);
         }
+
+        public void AgregarAuditoria(AuditoriaLog log)
+        {
+            _context.AuditoriaLogs.Add(log);
+        }
     }
 }

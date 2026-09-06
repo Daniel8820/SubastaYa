@@ -52,9 +52,12 @@ builder.Services.AddScoped<Application.UseCases.Subastas.Handlers.CrearSubastaCo
 builder.Services.AddScoped<Application.UseCases.Subastas.Handlers.GetCatalogoSubastasQueryHandler>();
 builder.Services.AddScoped<Application.UseCases.Subastas.Handlers.GetSubastaByIdQueryHandler>();
 builder.Services.AddScoped<Application.UseCases.Subastas.Handlers.RegistrarPujaCommandHandler>();
+builder.Services.AddScoped<Application.UseCases.Subastas.Handlers.CancelarSubastaCommandHandler>();
 
 builder.Services.AddScoped<Application.UseCases.Usuarios.Handlers.GetMisActividadesQueryHandler>();
 builder.Services.AddScoped<Application.UseCases.Usuarios.Handlers.RegistrarUsuarioCommandHandler>();
+builder.Services.AddScoped<Application.UseCases.Usuarios.Handlers.ActualizarPerfilCommandHandler>();
+builder.Services.AddScoped<Application.UseCases.Usuarios.Handlers.CambiarPasswordCommandHandler>();
 
 builder.Services.AddScoped<Application.UseCases.Wallet.Handlers.ConsultarSaldoQueryHandler>();
 builder.Services.AddScoped<Application.UseCases.Wallet.Handlers.DepositarFondosCommandHandler>();
@@ -77,11 +80,8 @@ builder.Services.AddIdentity<Usuario, IdentityRole<int>>(options =>
     options.Password.RequiredLength = 8;            // Mínimo de 8 caracteres
     options.Password.RequireUppercase = true;       // Al menos una letra mayúscula
     options.Password.RequireNonAlphanumeric = true; // Al menos un símbolo/carácter especial (!, @, #, etc)
-
-    // (Opcional, pero muy recomendado en la industria)
     options.Password.RequireDigit = true;           // Al menos un número
     options.Password.RequireLowercase = true;       // Al menos una letra minúscula
-
     options.User.RequireUniqueEmail = true;
 })
 .AddEntityFrameworkStores<Infrastructure.Persistence.SubastaYaDbContext>()
