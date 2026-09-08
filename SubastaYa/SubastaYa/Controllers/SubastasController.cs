@@ -10,7 +10,6 @@ namespace SubastaYa.Controllers
     [Route("api/v1/auctions")]
     public class SubastasController : ControllerBase
     {
-        // ¡ADIÓS DbContext! Controlador 100% limpio.
         public SubastasController()
         {
         }
@@ -22,7 +21,21 @@ namespace SubastaYa.Controllers
             [FromBody] RegistrarPujaCommand command,
             [FromServices] RegistrarPujaCommandHandler handler)
         {
+            // 1. Extraemos el ID directamente del token de forma segura
+            var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                       ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+
+            var claimNombre = User.FindFirst("nombre")?.Value ?? "Anónimo";
+
+            if (string.IsNullOrEmpty(claimId))
+                return Unauthorized(new { error = "Token inválido o sin permisos." });
+
+            // 2. Le inyectamos el ID real al comando (ignorando lo que mande el frontend)
+            command.CompradorId = int.Parse(claimId);
+            command.CompradorNombre = claimNombre;
             command.SubastaId = id;
+
+            // 3. Ejecutamos la lógica de negocio
             bool resultado = await handler.HandleAsync(command);
 
             if (!resultado)

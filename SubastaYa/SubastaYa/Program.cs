@@ -13,6 +13,19 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Agregar servicios al contenedor.
 builder.Services.AddSignalR();
+
+// Configuración de CORS para permitir peticiones desde React
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendCors", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173") // El puerto por defecto de Vite
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials(); // Para que SignalR funcione con WebSockets
+    });
+});
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -43,7 +56,7 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 
-    // NUEVO: Agregamos el filtro para la fecha dinámica en el POST de Subastas
+    // Agregamos el filtro para la fecha dinámica en el POST de Subastas
     c.SchemaFilter<SubastaYa.Configuraciones.SwaggerDefaultValuesFilter>();
 });
 
@@ -153,6 +166,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("FrontendCors");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
