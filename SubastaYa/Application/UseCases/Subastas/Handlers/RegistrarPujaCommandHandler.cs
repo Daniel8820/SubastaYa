@@ -35,6 +35,12 @@ namespace Application.UseCases.Subastas.Handlers
             if (subasta.Estado != "ACTIVA" || subasta.FechaFin <= DateTime.UtcNow)
                 throw new DomainException("La subasta ya ha finalizado o no se encuentra activa.");
 
+            // --- Bloquear al Vendedor ---
+            if (subasta.VendedorId == command.CompradorId)
+            {
+                throw new DomainException("No puedes pujar en una subasta que tú mismo has publicado.");
+            }
+
             // 1. Regla Anti Auto-Puja
             var pujaGanadoraActual = subasta.Pujas.OrderByDescending(p => p.Monto).FirstOrDefault();
             if (pujaGanadoraActual != null && pujaGanadoraActual.CompradorId == command.CompradorId)
@@ -105,7 +111,7 @@ namespace Application.UseCases.Subastas.Handlers
 
                 // Disparamos el evento a los WebSockets SOLO si el guardado en BD fue exitoso.
                 // Como acá no tenemos el nombre completo cargado, mandamos el ID para el front.
-                await _notificador.NotificarNuevaPujaAsync(command.SubastaId, command.Monto, $"Usuario {command.CompradorId}");
+                await _notificador.NotificarNuevaPujaAsync(command.SubastaId, command.Monto, command.CompradorNombre);
 
                 return true;
             }

@@ -18,6 +18,7 @@ namespace Application.Mappings
                 FechaInicio = subasta.FechaInicio,
                 FechaFin = subasta.FechaFin,
                 Estado = subasta.Estado,
+                VendedorId = subasta.VendedorId,
                 Vendedor = subasta.Vendedor != null ? subasta.Vendedor.Nombre : "Desconocido",
                 PujasTotal = subasta.Pujas.Count,
                 HistorialPujas = subasta.Pujas
