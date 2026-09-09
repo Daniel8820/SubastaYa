@@ -7,6 +7,7 @@
         public string UrlImagen { get; set; }
         public decimal PrecioBase { get; set; }
         public decimal IncrementoMinimo { get; set; }
+        public DateTime FechaInicio { get; set; }
         public DateTime FechaFin { get; set; }
         public int VendedorId { get; set; }
         public int CategoriaId { get; set; }
