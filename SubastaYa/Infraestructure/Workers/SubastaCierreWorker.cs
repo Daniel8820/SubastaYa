@@ -32,7 +32,27 @@ namespace SubastaYa.Presentacion.Workers
             using var scope = _scopeFactory.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<SubastaYaDbContext>();
 
-            // 1. Buscamos subastas activas cuyo tiempo ya se agotó
+            // Activar subastas programadas
+            var subastasParaActivar = await context.Subastas
+                .Where(s => s.Estado == "PROGRAMADA" && s.FechaInicio <= DateTime.UtcNow)
+                .ToListAsync();
+
+            foreach (var subasta in subastasParaActivar)
+            {
+                subasta.Estado = "ACTIVA";
+
+                // Registramos en auditoría la activación automática
+                context.AuditoriaLogs.Add(new AuditoriaLog
+                {
+                    Entidad = "SUBASTA",
+                    EntidadId = subasta.Id,
+                    Accion = "ACTIVACION_AUTOMATICA",
+                    UsuarioId = null, // Realizado por el sistemas
+                    DetalleJson = "{ \"estadoAnterior\": \"PROGRAMADA\", \"nuevoEstado\": \"ACTIVA\" }",
+                    Fecha = DateTime.UtcNow
+                });
+            }
+            // Finalizar subastas vencidas
             var subastasVencidas = await context.Subastas
                 .Include(s => s.Pujas)
                 .Where(s => s.Estado == "ACTIVA" && s.FechaFin <= DateTime.UtcNow)
@@ -41,12 +61,12 @@ namespace SubastaYa.Presentacion.Workers
             foreach (var subasta in subastasVencidas)
             {
                 var pujaGanadora = subasta.Pujas.OrderByDescending(p => p.Monto).FirstOrDefault();
-                string estadoAnterior = subasta.Estado; // Capturamos el estado original ("ACTIVA")
+                string estadoAnterior = subasta.Estado;
                 string nuevoEstado;
 
                 if (pujaGanadora != null)
                 {
-                    // 1. Acreditamos al Vendedor
+                    // Acreditamos al Vendedor
                     var billeteraVendedor = await context.Billeteras.FirstOrDefaultAsync(b => b.UsuarioId == subasta.VendedorId);
                     if (billeteraVendedor != null)
                     {
@@ -63,7 +83,7 @@ namespace SubastaYa.Presentacion.Workers
                         });
                     }
 
-                    // 2. Debitamos el saldo retenido al Comprador ganador
+                    // Debitamos el saldo retenido al Comprador ganador
                     var billeteraComprador = await context.Billeteras.FirstOrDefaultAsync(b => b.UsuarioId == pujaGanadora.CompradorId);
                     if (billeteraComprador != null)
                     {
@@ -84,26 +104,24 @@ namespace SubastaYa.Presentacion.Workers
                 }
                 else
                 {
-                    // 3. No hubo ofertas
                     nuevoEstado = "DESIERTA";
                 }
 
-                // Aplicamos el cambio de estado
                 subasta.Estado = nuevoEstado;
 
-                // 4. NUEVO: Registramos la auditoría de forma genérica para cualquier cambio
                 context.AuditoriaLogs.Add(new AuditoriaLog
                 {
                     Entidad = "SUBASTA",
                     EntidadId = subasta.Id,
                     Accion = "CAMBIO_ESTADO",
-                    UsuarioId = null, // Representa que fue el "Sistema/Worker"
+                    UsuarioId = null,
                     DetalleJson = $"{{ \"estadoAnterior\": \"{estadoAnterior}\", \"nuevoEstado\": \"{nuevoEstado}\" }}",
                     Fecha = DateTime.UtcNow
                 });
             }
 
-            if (subastasVencidas.Any())
+            // Guardar cambios de ambos procesos
+            if (subastasVencidas.Any() || subastasParaActivar.Any())
             {
                 await context.SaveChangesAsync();
             }

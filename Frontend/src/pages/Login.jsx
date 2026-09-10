@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 const Login = () => {
     const [correo, setCorreo] = useState('');
@@ -74,7 +74,7 @@ const Login = () => {
                             </form>
                             
                             <div className="text-center mt-3">
-                                <a href="/registro" className="text-decoration-none">¿No tienes cuenta? Regístrate</a>
+                                <Link to="/registro" className="text-decoration-none">¿No tienes cuenta? Regístrate</Link>
                             </div>
                         </div>
                     </div>

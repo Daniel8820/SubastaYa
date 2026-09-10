@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { formatearFechaLocal } from '../utils/formatters';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 
@@ -14,6 +14,10 @@ const Detalle = () => {
     const [montoPuja, setMontoPuja] = useState('');
     const [mensajePuja, setMensajePuja] = useState({ tipo: '', texto: '' });
     const [enviando, setEnviando] = useState(false);
+    const location = useLocation();
+    const rutaVolver = location.state?.origen || '/catalogo';
+    const textoVolver = location.state?.origen === '/mis-actividades' ? 'Volver a Mis Actividades' : 'Volver al catálogo';
+    const tabDeOrigen = location.state?.tab; // Para devolverle la pestaña si es que vino de ahí
 
     // Extraemos la función fuera del useEffect para poder llamarla después de pujar
     const obtenerDetalle = async () => {
@@ -175,7 +179,13 @@ const Detalle = () => {
     return (
         <div className="container mt-5">
             <div className="mb-4">
-                <Link to="/catalogo" className="btn btn-secondary btn-sm">&larr; Volver al catálogo</Link>
+                <Link 
+                    to={rutaVolver} 
+                    state={tabDeOrigen ? { tab: tabDeOrigen } : null}
+                    className="btn btn-secondary btn-sm"
+                >
+                    &larr; {textoVolver}
+                </Link>
             </div>
 
             <div className="row">

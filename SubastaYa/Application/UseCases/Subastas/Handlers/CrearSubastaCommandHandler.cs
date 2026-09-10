@@ -19,14 +19,21 @@ namespace Application.UseCases.Subastas.Handlers
         public async Task<int> HandleAsync(CrearSubastaCommand command)
         {
             if (command.PrecioBase <= 0 || command.IncrementoMinimo <= 0)
-            {
                 throw new DomainException("El precio base y el incremento mínimo deben ser mayores a cero.");
-            }
 
-            if (command.FechaFin.ToUniversalTime() <= DateTime.UtcNow)
-            {
+            // Pasamos ambas fechas a UTC para comparar correctamente
+            var fechaInicioUtc = command.FechaInicio.ToUniversalTime();
+            var fechaFinUtc = command.FechaFin.ToUniversalTime();
+
+            if (fechaFinUtc <= fechaInicioUtc)
+                throw new DomainException("La fecha de finalización debe ser posterior a la fecha de inicio.");
+
+            if (fechaFinUtc <= DateTime.UtcNow)
                 throw new DomainException("La fecha de finalización debe ser futura.");
-            }
+
+            // Si el usuario pone la fecha de ahora mismo (le damos 2 minutos de tolerancia 
+            // por lo que tarde en llenar el form), arranca ACTIVA. Si no, PROGRAMADA.
+            string estadoCalculado = fechaInicioUtc <= DateTime.UtcNow.AddMinutes(2) ? "ACTIVA" : "PROGRAMADA";
 
             var nuevaSubasta = new Subasta
             {
@@ -35,11 +42,12 @@ namespace Application.UseCases.Subastas.Handlers
                 UrlImagen = command.UrlImagen,
                 PrecioBase = command.PrecioBase,
                 IncrementoMinimo = command.IncrementoMinimo,
-                FechaInicio = DateTime.UtcNow,
-                FechaFin = command.FechaFin.ToUniversalTime(),
-                Estado = "ACTIVA",
+                FechaInicio = fechaInicioUtc, // Se guarda la fecha elegida
+                FechaFin = fechaFinUtc,
+                Estado = estadoCalculado,     // Se guarda el estado calculado
                 VendedorId = command.VendedorId,
-                CategoriaId = command.CategoriaId
+                CategoriaId = command.CategoriaId,
+                Version = 1
             };
 
             await _subastaRepository.AgregarAsync(nuevaSubasta);

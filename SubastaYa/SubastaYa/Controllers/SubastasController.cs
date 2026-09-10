@@ -52,14 +52,23 @@ namespace SubastaYa.Controllers
             [FromBody] CrearSubastaCommand command,
             [FromServices] CrearSubastaCommandHandler handler)
         {
+            // 1. Extraemos el ID directamente del token
+            var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                       ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+
+            if (string.IsNullOrEmpty(claimId))
+                return Unauthorized(new { error = "Token inválido o sin permisos." });
+
+            // 2. Le inyectamos el ID real del vendedor al comando
+            command.VendedorId = int.Parse(claimId);
+
             int subastaId = await handler.HandleAsync(command);
 
-            // REST Nivel 2: Devolvemos 201 Created y le decimos al cliente 
-            // cómo llamar al GET ObtenerDetalleSubasta pasándole el nuevo ID
+            // 3. Devolvemos 201 Created
             return CreatedAtAction(
-                nameof(ObtenerDetalleSubasta), // El nombre del método GET
-                new { id = subastaId },        // El parámetro de ruta que necesita el GET
-                new { mensaje = "Subasta creada exitosamente", subastaId = subastaId } // El cuerpo de la respuesta
+                nameof(ObtenerDetalleSubasta),
+                new { id = subastaId },
+                new { mensaje = "Subasta creada exitosamente", subastaId = subastaId }
             );
         }
 
