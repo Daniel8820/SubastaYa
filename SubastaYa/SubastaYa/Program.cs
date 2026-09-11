@@ -1,13 +1,26 @@
-using Domain.Entities;
-using Infrastructure.Persistence;
+using SubastaYa.Application.Interfaces.Persistence;
+using SubastaYa.Application.UseCases.Subastas.ActivarSubastas;
+using SubastaYa.Application.UseCases.Subastas.CancelarSubasta;
+using SubastaYa.Application.UseCases.Subastas.CrearSubasta;
+using SubastaYa.Application.UseCases.Subastas.FinalizarSubastas;
+using SubastaYa.Application.UseCases.Subastas.GetCatalogoSubastas;
+using SubastaYa.Application.UseCases.Subastas.GetSubastaById;
+using SubastaYa.Application.UseCases.Subastas.RegistrarPuja;
+using SubastaYa.Application.UseCases.Usuarios.ActualizarPerfil;
+using SubastaYa.Application.UseCases.Usuarios.CambiarPassword;
+using SubastaYa.Application.UseCases.Usuarios.GetMisActividades;
+using SubastaYa.Application.UseCases.Usuarios.RegistrarUsuario;
+using SubastaYa.Application.UseCases.Wallet.ConsultarSaldo;
+using SubastaYa.Application.UseCases.Wallet.DepositarFondos;
+using SubastaYa.Application.UseCases.Wallet.ObtenerHistorial;
+using SubastaYa.Infrastructure.Data;
+using SubastaYa.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
-
-// using SubastaYa.Configuraciones; 
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,7 +47,7 @@ builder.Services.AddSwaggerGen(c =>
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "Autorización JWT. Escribí 'Bearer [espacio] tu_token' en el cuadro de abajo.",
+        Description = "Autorización JWT. 'Bearer [espacio] token' en el cuadro de abajo.",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
@@ -55,39 +68,44 @@ builder.Services.AddSwaggerGen(c =>
             new string[] {}
         }
     });
-
-    // Agregamos el filtro para la fecha dinámica en el POST de Subastas
-    c.SchemaFilter<SubastaYa.Configuraciones.SwaggerDefaultValuesFilter>();
 });
 
 // Registro de los Handlers de CQRS
-builder.Services.AddScoped<Application.UseCases.Subastas.Handlers.CrearSubastaCommandHandler>();
-builder.Services.AddScoped<Application.UseCases.Subastas.Handlers.GetCatalogoSubastasQueryHandler>();
-builder.Services.AddScoped<Application.UseCases.Subastas.Handlers.GetSubastaByIdQueryHandler>();
-builder.Services.AddScoped<Application.UseCases.Subastas.Handlers.RegistrarPujaCommandHandler>();
-builder.Services.AddScoped<Application.UseCases.Subastas.Handlers.CancelarSubastaCommandHandler>();
+builder.Services.AddScoped<CrearSubastaCommandHandler>();
+builder.Services.AddScoped<GetCatalogoSubastasQueryHandler>();
+builder.Services.AddScoped<GetSubastaByIdQueryHandler>();
+builder.Services.AddScoped<RegistrarPujaCommandHandler>();
+builder.Services.AddScoped<CancelarSubastaCommandHandler>();
+builder.Services.AddScoped<ActivarSubastasCommandHandler>();
+builder.Services.AddScoped<FinalizarSubastasCommandHandler>();
 
-builder.Services.AddScoped<Application.UseCases.Usuarios.Handlers.GetMisActividadesQueryHandler>();
-builder.Services.AddScoped<Application.UseCases.Usuarios.Handlers.RegistrarUsuarioCommandHandler>();
-builder.Services.AddScoped<Application.UseCases.Usuarios.Handlers.ActualizarPerfilCommandHandler>();
-builder.Services.AddScoped<Application.UseCases.Usuarios.Handlers.CambiarPasswordCommandHandler>();
 
-builder.Services.AddScoped<Application.UseCases.Wallet.Handlers.ConsultarSaldoQueryHandler>();
-builder.Services.AddScoped<Application.UseCases.Wallet.Handlers.DepositarFondosCommandHandler>();
-builder.Services.AddScoped<Application.UseCases.Wallet.Handlers.ObtenerHistorialQueryHandler>();
+builder.Services.AddScoped<GetMisActividadesQueryHandler>();
+builder.Services.AddScoped<RegistrarUsuarioCommandHandler>();
+builder.Services.AddScoped<ActualizarPerfilCommandHandler>();
+builder.Services.AddScoped<CambiarPasswordCommandHandler>();
+
+builder.Services.AddScoped<ConsultarSaldoQueryHandler>();
+builder.Services.AddScoped<DepositarFondosCommandHandler>();
+builder.Services.AddScoped<ObtenerHistorialQueryHandler>();
+
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+
+// Registramos el puente de autenticación de Identity
+builder.Services.AddScoped<SubastaYa.Application.Interfaces.Services.IAuthService, SubastaYa.Infrastructure.Services.AuthService>();
 
 //Worker
-builder.Services.AddHostedService<SubastaYa.Presentacion.Workers.SubastaCierreWorker>();
+builder.Services.AddHostedService<SubastaYa.Infrastructure.Workers.SubastaBackgroundWorker>();
 
 // Notificador
-builder.Services.AddScoped<Application.Interfaces.INotificadorSubastas, Infrastructure.SignalR.NotificadorSubastas>();
+builder.Services.AddScoped<INotificadorSubastas, SubastaYa.Infrastructure.SignalR.NotificadorSubastas>();
 
 // Configurar DbContext con SQL Server
 builder.Services.AddDbContext<SubastaYaDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Configuración de Identity
-builder.Services.AddIdentity<Usuario, IdentityRole<int>>(options =>
+builder.Services.AddIdentity<SubastaYa.Infrastructure.Identity.ApplicationUser, IdentityRole>(options =>
 {
     // Opciones de Contraseña Robustas
     options.Password.RequiredLength = 8;            // Mínimo de 8 caracteres
@@ -97,15 +115,15 @@ builder.Services.AddIdentity<Usuario, IdentityRole<int>>(options =>
     options.Password.RequireLowercase = true;       // Al menos una letra minúscula
     options.User.RequireUniqueEmail = true;
 })
-.AddEntityFrameworkStores<Infrastructure.Persistence.SubastaYaDbContext>()
+.AddEntityFrameworkStores<SubastaYaDbContext>()
 .AddDefaultTokenProviders();
 
 // -------------------------------------------------------------------------
 // Registro de Repositorios y Unit of Work para la Arquitectura Limpia
 // -------------------------------------------------------------------------
-builder.Services.AddScoped<Application.Interfaces.ISubastaRepository, Infrastructure.Persistence.Repositories.SubastaRepository>();
-builder.Services.AddScoped<Application.Interfaces.IBilleteraRepository, Infrastructure.Persistence.Repositories.BilleteraRepository>();
-builder.Services.AddScoped<Application.Interfaces.IUnitOfWork, Infrastructure.Persistence.UnitOfWork>();
+builder.Services.AddScoped<ISubastaRepository, SubastaRepository>();
+builder.Services.AddScoped<IBilleteraRepository, BilleteraRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 // -------------------------------------------------------------------------
 
 // Leemos la configuración del appsettings
@@ -146,7 +164,7 @@ using (var scope = app.Services.CreateScope())
     try
     {
         // Llamamos a nuestro método estático de inicialización
-        await Infrastructure.Persistence.DbInitializer.SeedDataAsync(services);
+        await DbInitializer.SeedDataAsync(services);
     }
     catch (Exception ex)
     {
@@ -157,7 +175,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Registramos nuestro middleware global de excepciones al inicio del pipeline
-app.UseMiddleware<SubastaYa.Middlewares.ExceptionMiddleware>();
+app.UseMiddleware<SubastaYa.Api.Middlewares.ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -170,6 +188,6 @@ app.UseCors("FrontendCors");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapHub<Infrastructure.SignalR.SubastaHub>("/hubs/subasta");
+app.MapHub<SubastaYa.Infrastructure.SignalR.SubastaHub>("/hubs/subasta");
 
 app.Run();

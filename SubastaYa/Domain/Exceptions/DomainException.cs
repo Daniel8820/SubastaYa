@@ -1,4 +1,4 @@
-﻿namespace Domain.Exceptions
+﻿namespace SubastaYa.Domain.Exceptions
 {
     public class DomainException : Exception
     {

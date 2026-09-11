@@ -1,7 +1,7 @@
-﻿using Application.Interfaces;
+﻿using SubastaYa.Application.Interfaces.Persistence;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Infrastructure.SignalR
+namespace SubastaYa.Infrastructure.SignalR
 {
     public class NotificadorSubastas : INotificadorSubastas
     {
