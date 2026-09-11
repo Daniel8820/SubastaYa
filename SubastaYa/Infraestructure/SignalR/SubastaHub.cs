@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 
-namespace Infrastructure.SignalR
+namespace SubastaYa.Infrastructure.SignalR
 {
     public class SubastaHub : Hub
     {

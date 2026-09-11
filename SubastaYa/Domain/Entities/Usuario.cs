@@ -1,16 +1,12 @@
-﻿using Microsoft.AspNetCore.Identity;
-
-namespace Domain.Entities
+﻿namespace SubastaYa.Domain.Entities
 {
-    // Heredamos de IdentityUser<int> para que el ID siga siendo numérico
-    public class Usuario : IdentityUser<int>
+    public class Usuario
     {
-        // El Id, Email y PasswordHash ya vienen incluidos de fábrica en IdentityUser.
-        // Solo agregamos las propiedades extra que son de nuestro negocio:
+        public int Id { get; set; }
         public string Nombre { get; set; }
+        public string Email { get; set; }
         public DateTime FechaRegistro { get; set; }
-
-        // Relación 1:1 con Billetera
+        public string IdentityId { get; set; }
         public Billetera Billetera { get; set; }
     }
 }

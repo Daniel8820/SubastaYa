@@ -1,11 +1,12 @@
-﻿using Application.UseCases.Usuarios.Queries;
-using Application.UseCases.Usuarios.Handlers;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using SubastaYa.Application.UseCases.Usuarios.ActualizarPerfil;
+using SubastaYa.Application.UseCases.Usuarios.CambiarPassword;
+using SubastaYa.Application.UseCases.Usuarios.GetMisActividades;
 
-namespace SubastaYa.Controllers
+namespace SubastaYa.Api.Controllers
 {
     [ApiController]
     [Route("api/v1/users")]
@@ -45,8 +46,8 @@ namespace SubastaYa.Controllers
 
         [HttpPut("me/profile")]
         public async Task<IActionResult> ActualizarPerfil(
-            [FromBody] Application.UseCases.Usuarios.Commands.ActualizarPerfilCommand command,
-            [FromServices] Application.UseCases.Usuarios.Handlers.ActualizarPerfilCommandHandler handler)
+            [FromBody] ActualizarPerfilCommand command,
+            [FromServices] ActualizarPerfilCommandHandler handler)
         {
             // Obligamos a que el ID sea el del token actual
             command.UsuarioId = ObtenerUsuarioIdDelToken();
@@ -57,8 +58,8 @@ namespace SubastaYa.Controllers
 
         [HttpPut("me/password")]
         public async Task<IActionResult> CambiarPassword(
-            [FromBody] Application.UseCases.Usuarios.Commands.CambiarPasswordCommand command,
-            [FromServices] Application.UseCases.Usuarios.Handlers.CambiarPasswordCommandHandler handler)
+            [FromBody] CambiarPasswordCommand command,
+            [FromServices] CambiarPasswordCommandHandler handler)
         {
             command.UsuarioId = ObtenerUsuarioIdDelToken();
 

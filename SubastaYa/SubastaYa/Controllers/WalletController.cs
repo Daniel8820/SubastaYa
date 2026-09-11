@@ -1,12 +1,12 @@
-﻿using Application.UseCases.Wallet.Commands;
-using Application.UseCases.Wallet.Queries;
-using Application.UseCases.Wallet.Handlers;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
+using SubastaYa.Application.UseCases.Wallet.DepositarFondos;
+using SubastaYa.Application.UseCases.Wallet.ConsultarSaldo;
+using SubastaYa.Application.UseCases.Wallet.ObtenerHistorial;
 
-namespace SubastaYa.Presentacion.Controllers
+namespace SubastaYa.Api.Controllers
 {
     [ApiController]
     [Route("api/wallet")]

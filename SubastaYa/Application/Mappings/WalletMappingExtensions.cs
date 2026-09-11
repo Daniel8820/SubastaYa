@@ -1,7 +1,7 @@
-﻿using Application.Models;
-using Domain.Entities;
+﻿using SubastaYa.Application.DTOs;
+using SubastaYa.Domain.Entities;
 
-namespace Application.Mappings
+namespace SubastaYa.Application.Mappings
 {
     public static class WalletMappingExtensions
     {

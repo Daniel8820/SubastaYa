@@ -1,10 +1,12 @@
-﻿using Application.UseCases.Subastas.Commands;
-using Application.UseCases.Subastas.Handlers;
-using Application.UseCases.Subastas.Queries;
+﻿using SubastaYa.Application.UseCases.Subastas.CancelarSubasta;
+using SubastaYa.Application.UseCases.Subastas.CrearSubasta;
+using SubastaYa.Application.UseCases.Subastas.GetCatalogoSubastas;
+using SubastaYa.Application.UseCases.Subastas.GetSubastaById;
+using SubastaYa.Application.UseCases.Subastas.RegistrarPuja;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace SubastaYa.Controllers
+namespace SubastaYa.Api.Controllers
 {
     [ApiController]
     [Route("api/v1/auctions")]
@@ -118,13 +120,13 @@ namespace SubastaYa.Controllers
         [HttpPatch("{id}/cancel")]
         public async Task<IActionResult> CancelarSubasta(
             int id,
-            [FromServices] Application.UseCases.Subastas.Handlers.CancelarSubastaCommandHandler handler)
+            [FromServices] CancelarSubastaCommandHandler handler)
         {
             // Extraemos el ID del usuario directamente desde el token (Igual que en UsuariosController)
             var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
                        ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
 
-            var command = new Application.UseCases.Subastas.Commands.CancelarSubastaCommand
+            var command = new Application.UseCases.Subastas.CancelarSubasta.CancelarSubastaCommand
             {
                 SubastaId = id,
                 VendedorId = int.Parse(claimId)
