@@ -118,8 +118,7 @@ namespace SubastaYa.Api.Controllers
 
         [Authorize]
         [HttpPatch("{id}/cancel")]
-        public async Task<IActionResult> CancelarSubasta(
-            int id,
+        public async Task<IActionResult> CancelarSubasta(int id,
             [FromServices] CancelarSubastaCommandHandler handler)
         {
             // Extraemos el ID del usuario directamente desde el token (Igual que en UsuariosController)

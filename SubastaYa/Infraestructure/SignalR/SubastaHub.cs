@@ -1,6 +1,4 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
-using System.Text.RegularExpressions;
 
 namespace SubastaYa.Infrastructure.SignalR
 {

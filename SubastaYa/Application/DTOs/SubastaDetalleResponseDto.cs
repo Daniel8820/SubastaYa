@@ -13,6 +13,7 @@
         public string Estado { get; set; }
         public int VendedorId { get; set; }
         public string Vendedor { get; set; }
+        public string Categoria { get; set; }
         public int PujasTotal { get; set; }
         public List<PujaItemDto> HistorialPujas { get; set; } = new();
     }
@@ -22,5 +23,6 @@
         public decimal Monto { get; set; }
         public DateTime Fecha { get; set; }
         public string Comprador { get; set; }
+        public int CompradorId { get; set; }
     }
 }

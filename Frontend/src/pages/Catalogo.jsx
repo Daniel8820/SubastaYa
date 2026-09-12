@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { formatearFechaLocal } from '../utils/formatters';
+import ContadorRegresivo from '../components/ContadorRegresivo';
 
 const Catalogo = () => {
     const [subastas, setSubastas] = useState([]);
@@ -9,7 +10,6 @@ const Catalogo = () => {
     const [pagina, setPagina] = useState(1);
     const [paginacionInfo, setPaginacionInfo] = useState({});
     
-    // Estado para mostrar u ocultar el panel de filtros
     const [mostrarFiltros, setMostrarFiltros] = useState(false);
 
     // Estados "Borrador"
@@ -69,9 +69,28 @@ const Catalogo = () => {
         setPagina(1); 
     };
 
+    // Nueva función para resetear todo a los valores por defecto
+    const handleLimpiarFiltros = () => {
+        // 1. Reseteamos lo que el usuario ve en las cajas
+        setInputEstado('ACTIVA');
+        setInputCategoria('');
+        setInputOrden('tiempo_restante');
+        setInputPrecioMin('');
+        setInputPrecioMax('');
+
+        // 2. Reseteamos lo que va a la API
+        setFiltroEstado('ACTIVA');
+        setFiltroCategoria('');
+        setFiltroOrden('tiempo_restante');
+        setFiltroPrecioMin('');
+        setFiltroPrecioMax('');
+        
+        // 3. Volvemos a la página 1
+        setPagina(1);
+    };
+
     return (
         <div className="container mt-5">
-            {/* Cabecera con Título y Botón de Filtros */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h2 className="text-primary mb-0">Catálogo de Subastas</h2>
                 <button 
@@ -83,7 +102,6 @@ const Catalogo = () => {
                 </button>
             </div>
             
-            {/* Panel de Filtros Desplegable */}
             {mostrarFiltros && (
                 <form onSubmit={handleAplicarFiltros} className="bg-light p-4 rounded shadow-sm mb-4 border">
                     <div className="row g-3 align-items-end mb-3">
@@ -135,16 +153,18 @@ const Catalogo = () => {
                                 onChange={(e) => setInputPrecioMax(e.target.value)} 
                             />
                         </div>
-                        <div className="col-md-4">
-                            <button type="submit" className="btn btn-primary w-100 fw-bold">
-                                <i className="bi bi-search me-2"></i> Aplicar Filtros
+                        <div className="col-md-4 d-flex gap-2">
+                            <button type="button" className="btn btn-outline-secondary w-50 fw-bold" onClick={handleLimpiarFiltros}>
+                                Limpiar
+                            </button>
+                            <button type="submit" className="btn btn-primary w-50 fw-bold">
+                                <i className="bi bi-search me-2"></i> Aplicar
                             </button>
                         </div>
                     </div>
                 </form>
             )}
 
-            {/* Contenido (Grilla o Loading) */}
             {cargando ? (
                 <div className="text-center mt-5 py-5">
                     <div className="spinner-border text-primary" role="status"></div>
@@ -157,24 +177,43 @@ const Catalogo = () => {
                             <div className="col-12 col-md-6 col-lg-4" key={subasta.id}>
                                 <div className="card h-100 shadow-sm">
                                     <div className="card-body">
-                                        <h5 className="card-title">{subasta.titulo}</h5>
-                                        <div className="mb-2">
+                                        {/* Título y Estado */}
+                                        <div className="d-flex justify-content-between align-items-start mb-2">
+                                            <h5 className="card-title text-truncate mb-0" title={subasta.titulo}>
+                                                {subasta.titulo}
+                                            </h5>
                                             <span className={`badge ${subasta.estado === 'ACTIVA' ? 'bg-success' : 'bg-secondary'}`}>
                                                 {subasta.estado}
                                             </span>
                                         </div>
-                                        <p className="card-text mb-1">
-                                            <strong>Oferta más alta:</strong> ${subasta.ofertaMasAlta}
+                                        
+                                        {/* Categoría (Asegurate de que tu backend envíe esta propiedad en el JSON) */}
+                                        <p className="text-muted small mb-3">
+                                            <i className="bi bi-tag-fill me-1"></i> 
+                                            {subasta.categoria || 'Sin categoría'}
                                         </p>
-                                        <p className="card-text text-muted small mb-3">
-                                            Pujas hasta ahora: {subasta.cantidadOfertas}
-                                        </p>
-                                        <Link to={`/subasta/${subasta.id}`} className="btn btn-outline-primary w-100">
+
+                                        {/* Ofertas */}
+                                        <div className="bg-light p-2 rounded mb-3 text-center">
+                                            <p className="card-text mb-1 text-muted small">Oferta más alta</p>
+                                            <h4 className="text-primary mb-0">${subasta.ofertaMasAlta}</h4>
+                                            <p className="card-text text-muted small mt-1 mb-0">
+                                                ({subasta.cantidadOfertas} pujas realizadas)
+                                            </p>
+                                        </div>
+
+                                        <Link to={`/subasta/${subasta.id}`} className="btn btn-outline-primary w-100 fw-bold">
                                             Ver Detalle
                                         </Link>
                                     </div>
-                                    <div className="card-footer bg-transparent text-muted small">
-                                        Cierra el: {formatearFechaLocal(subasta.fechaFin)}
+                                    
+                                    {/* Contador Regresivo Inteligente */}
+                                    <div className="card-footer bg-white border-top-0 pb-3">
+                                        <ContadorRegresivo 
+                                            fechaInicio={subasta.fechaInicio} 
+                                            fechaFin={subasta.fechaFin} 
+                                            estado={subasta.estado} 
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -190,7 +229,6 @@ const Catalogo = () => {
                         )}
                     </div>
 
-                    {/* Controles de Paginación */}
                     {paginacionInfo.totalPaginas > 1 && (
                         <div className="d-flex justify-content-center align-items-center mt-5 mb-4">
                             <button 

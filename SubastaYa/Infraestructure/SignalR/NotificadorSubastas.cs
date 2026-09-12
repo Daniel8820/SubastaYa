@@ -7,21 +7,21 @@ namespace SubastaYa.Infrastructure.SignalR
     {
         private readonly IHubContext<SubastaHub> _hubContext;
 
-        // Inyectamos el contexto del Hub de SignalR
         public NotificadorSubastas(IHubContext<SubastaHub> hubContext)
         {
             _hubContext = hubContext;
         }
 
-        public async Task NotificarNuevaPujaAsync(int subastaId, decimal nuevoMonto, string compradorNombre)
+        // Le sumamos el parámetro "int compradorId" al final
+        public async Task NotificarNuevaPujaAsync(int subastaId, decimal nuevoMonto, string compradorNombre, int compradorId)
         {
             string nombreSala = $"subasta_{subastaId}";
 
-            // Disparamos un evento llamado "RecibirNuevaPuja" SOLO a los que estén mirando esta subasta
             await _hubContext.Clients.Group(nombreSala).SendAsync("RecibirNuevaPuja", new
             {
                 Monto = nuevoMonto,
                 Comprador = compradorNombre,
+                CompradorId = compradorId,
                 Fecha = DateTime.UtcNow
             });
         }
