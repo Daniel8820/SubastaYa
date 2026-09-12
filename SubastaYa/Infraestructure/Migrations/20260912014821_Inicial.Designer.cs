@@ -12,7 +12,7 @@ using SubastaYa.Infrastructure.Data;
 namespace SubastaYa.Infrastructure.Migrations
 {
     [DbContext(typeof(SubastaYaDbContext))]
-    [Migration("20260911205130_Inicial")]
+    [Migration("20260912014821_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />

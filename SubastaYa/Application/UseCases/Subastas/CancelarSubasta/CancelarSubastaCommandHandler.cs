@@ -1,6 +1,7 @@
 ﻿using SubastaYa.Application.Interfaces.Persistence;
 using SubastaYa.Application.Interfaces.Services;
 using SubastaYa.Domain.Exceptions;
+using SubastaYa.Domain.Entities;
 
 namespace SubastaYa.Application.UseCases.Subastas.CancelarSubasta
 {
@@ -25,7 +26,7 @@ namespace SubastaYa.Application.UseCases.Subastas.CancelarSubasta
             if (subasta.VendedorId != command.VendedorId)
                 throw new DomainException("Solo el vendedor original puede cancelar esta subasta.");
 
-            if (subasta.Estado != "ACTIVA" && subasta.Estado != "PROGRAMADA")
+            if (subasta.Estado != EstadosSubasta.Activa && subasta.Estado != EstadosSubasta.Programada)
                 throw new DomainException("Solo se pueden cancelar subastas activas o programadas.");
 
             // Regla de negocio - Cancelacion
@@ -36,7 +37,7 @@ namespace SubastaYa.Application.UseCases.Subastas.CancelarSubasta
             string estadoAnterior = subasta.Estado;
 
             // Cambiamos el estado
-            subasta.Estado = "CANCELADA";
+            subasta.Estado = EstadosSubasta.Cancelada;
             _subastaRepository.Actualizar(subasta);
 
             // Registro de Auditoría
@@ -46,7 +47,7 @@ namespace SubastaYa.Application.UseCases.Subastas.CancelarSubasta
                 EntidadId = subasta.Id,
                 Accion = "CANCELACION_MANUAL",
                 UsuarioId = command.VendedorId, // Quién ejecutó la acción
-                DetalleJson = $"{{ \"estadoAnterior\": \"{estadoAnterior}\", \"nuevoEstado\": \"CANCELADA\" }}",
+                DetalleJson = $"{{ \"estadoAnterior\": \"{estadoAnterior}\", \"nuevoEstado\": \"{EstadosSubasta.Cancelada}\" }}",
                 Fecha = DateTime.UtcNow
             });
 

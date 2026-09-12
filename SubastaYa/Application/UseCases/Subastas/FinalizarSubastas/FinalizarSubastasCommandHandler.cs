@@ -22,7 +22,7 @@ namespace SubastaYa.Application.UseCases.Subastas.FinalizarSubastas
 
         public async Task<int> HandleAsync(FinalizarSubastasCommand command)
         {
-            // Nota: Tendrás que agregar este método ObtenerVencidasAsync a tu ISubastaRepository
+            
             var subastasVencidas = await _subastaRepository.ObtenerVencidasAsync(DateTime.UtcNow);
 
             if (!subastasVencidas.Any()) return 0;
@@ -38,8 +38,8 @@ namespace SubastaYa.Application.UseCases.Subastas.FinalizarSubastas
                     var billeteraVendedor = await _billeteraRepository.ObtenerPorUsuarioIdAsync(subasta.VendedorId);
                     if (billeteraVendedor != null)
                     {
-                        billeteraVendedor.SaldoTotal += pujaGanadora.Monto;
-                        billeteraVendedor.SaldoDisponible += pujaGanadora.Monto;
+                        // Reemplazamos la suma manual por el método de dominio
+                        billeteraVendedor.Acreditar(pujaGanadora.Monto);
                         _billeteraRepository.Actualizar(billeteraVendedor);
 
                         _billeteraRepository.AgregarTransaccion(new TransaccionLedger
@@ -55,8 +55,8 @@ namespace SubastaYa.Application.UseCases.Subastas.FinalizarSubastas
                     var billeteraComprador = await _billeteraRepository.ObtenerPorUsuarioIdAsync(pujaGanadora.CompradorId);
                     if (billeteraComprador != null)
                     {
-                        billeteraComprador.SaldoTotal -= pujaGanadora.Monto;
-                        billeteraComprador.SaldoRetenido -= pujaGanadora.Monto;
+                        // Reemplazamos la resta manual por el método de dominio
+                        billeteraComprador.DescontarPago(pujaGanadora.Monto);
                         _billeteraRepository.Actualizar(billeteraComprador);
 
                         _billeteraRepository.AgregarTransaccion(new TransaccionLedger
@@ -68,11 +68,11 @@ namespace SubastaYa.Application.UseCases.Subastas.FinalizarSubastas
                             SubastaId = subasta.Id
                         });
                     }
-                    nuevoEstado = "FINALIZADA";
+                    nuevoEstado = EstadosSubasta.Finalizada;
                 }
                 else
                 {
-                    nuevoEstado = "DESIERTA";
+                    nuevoEstado = EstadosSubasta.Desierta;
                 }
 
                 subasta.Estado = nuevoEstado;

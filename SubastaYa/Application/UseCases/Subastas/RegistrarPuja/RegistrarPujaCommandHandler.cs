@@ -1,5 +1,6 @@
 ﻿using SubastaYa.Application.Interfaces.Persistence;
 using SubastaYa.Application.Interfaces.Services;
+using SubastaYa.Domain.Entities;
 using SubastaYa.Domain.Exceptions;
 
 namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
@@ -32,7 +33,7 @@ namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
             if (subasta == null)
                 throw new DomainException("La subasta no existe.");
 
-            if (subasta.Estado != "ACTIVA" || subasta.FechaFin <= DateTime.UtcNow)
+            if (subasta.Estado != EstadosSubasta.Activa || subasta.FechaFin <= DateTime.UtcNow)
                 throw new DomainException("La subasta ya ha finalizado o no se encuentra activa.");
 
             // --- Bloquear al Vendedor ---
@@ -74,25 +75,25 @@ namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
                 var billeteraAnterior = await _billeteraRepository.ObtenerPorUsuarioIdAsync(pujaAnterior.CompradorId);
                 if (billeteraAnterior != null)
                 {
-                    billeteraAnterior.SaldoRetenido -= pujaAnterior.Monto;
-                    billeteraAnterior.SaldoDisponible += pujaAnterior.Monto;
+                    // Liberamos los fondos del pujador anterior usando la regla del Dominio
+                    billeteraAnterior.LiberarGarantia(pujaAnterior.Monto);
                     _billeteraRepository.Actualizar(billeteraAnterior);
                 }
             }
 
-            billeteraComprador.SaldoDisponible -= command.Monto;
-            billeteraComprador.SaldoRetenido += command.Monto;
+            // Retenemos los fondos del nuevo pujador garantizando que tenga saldo (el método lanza excepción si no)
+            billeteraComprador.RetenerFondos(command.Monto);
 
             _billeteraRepository.Actualizar(billeteraComprador);
 
-            // 5. Regla Anti-Sniping
+            // Regla Anti-Sniping
             var tiempoRestante = subasta.FechaFin - DateTime.UtcNow;
             if (tiempoRestante.TotalSeconds > 0 && tiempoRestante.TotalSeconds <= 60)
             {
                 subasta.FechaFin = subasta.FechaFin.AddMinutes(2);
             }
 
-            // 6. Registrar la nueva Puja en la subasta
+            // Registrar la nueva Puja en la subasta
             subasta.Pujas.Add(new Domain.Entities.Puja
             {
                 SubastaId = subasta.Id,
@@ -106,10 +107,10 @@ namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
 
             try
             {
-                // Guardamos todo de forma atómica usando el Unit of Work
+                // Guardamos todo usando el Unit of Work
                 await _unitOfWork.SaveChangesAsync();
 
-                // Disparamos el evento a los WebSockets SOLO si el guardado en BD fue exitoso.
+                // Disparamos el evento a los WebSockets si el guardado en BD fue exitoso.
                 // Como acá no tenemos el nombre completo cargado, mandamos el ID para el front.
                 await _notificador.NotificarNuevaPujaAsync(command.SubastaId, command.Monto, command.CompradorNombre);
 
@@ -117,7 +118,7 @@ namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
             }
             catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
             {
-                // Si hay choque de concurrencia optimista, devolvemos false para que el controller devuelva 409
+                // Si hay choque de concurrencia, devolvemos false para que el controller devuelva 409
                 return false;
             }
         }
