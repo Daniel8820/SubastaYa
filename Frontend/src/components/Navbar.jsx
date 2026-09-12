@@ -5,7 +5,7 @@ const Navbar = () => {
     const location = useLocation();
 
     // Ocultamos el Navbar en la pantalla de Login
-    if (location.pathname === '/login' || location.pathname === '/') {
+    if (location.pathname === '/login' || location.pathname === '/' || location.pathname === '/registro') {
         return null;
     }
 

@@ -66,6 +66,13 @@ namespace SubastaYa.Infrastructure.Repositories
 
             if (!string.IsNullOrEmpty(estado))
                 query = query.Where(s => s.Estado.ToUpper() == estado.ToUpper());
+            else
+            {
+                // REGLA DE NEGOCIO: Si pide "Todos", limpiamos la basura del catálogo público
+                query = query.Where(s =>
+                    s.Estado != EstadosSubasta.Cancelada &&
+                    s.Estado != EstadosSubasta.Desierta);
+            }
 
             if (categoriaId.HasValue)
                 query = query.Where(s => s.CategoriaId == categoriaId.Value);
