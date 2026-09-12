@@ -33,9 +33,6 @@ namespace SubastaYa.Application.UseCases.Usuarios.RegistrarUsuario
                 IdentityId = nuevoIdentityId,
                 Billetera = new Billetera
                 {
-                    SaldoTotal = 0,
-                    SaldoDisponible = 0,
-                    SaldoRetenido = 0,
                     Version = 1
                 }
             };

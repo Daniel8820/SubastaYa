@@ -33,7 +33,7 @@ namespace SubastaYa.Application.UseCases.Subastas.CrearSubasta
 
             // Si el usuario pone la fecha de ahora mismo (le damos 2 minutos de tolerancia 
             // por lo que tarde en llenar el form), arranca ACTIVA. Si no, PROGRAMADA.
-            string estadoCalculado = fechaInicioUtc <= DateTime.UtcNow.AddMinutes(2) ? "ACTIVA" : "PROGRAMADA";
+            string estadoCalculado = fechaInicioUtc <= DateTime.UtcNow.AddMinutes(2) ? EstadosSubasta.Activa : EstadosSubasta.Programada;
 
             var nuevaSubasta = new Subasta
             {

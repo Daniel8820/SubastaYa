@@ -23,7 +23,7 @@ namespace SubastaYa.Api.Controllers
             [FromBody] RegistrarPujaCommand command,
             [FromServices] RegistrarPujaCommandHandler handler)
         {
-            // 1. Extraemos el ID directamente del token de forma segura
+            // Extraemos el ID directamente del token de forma segura
             var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
                        ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
 
@@ -32,12 +32,12 @@ namespace SubastaYa.Api.Controllers
             if (string.IsNullOrEmpty(claimId))
                 return Unauthorized(new { error = "Token inválido o sin permisos." });
 
-            // 2. Le inyectamos el ID real al comando (ignorando lo que mande el frontend)
+            // Le inyectamos el ID real al comando
             command.CompradorId = int.Parse(claimId);
             command.CompradorNombre = claimNombre;
             command.SubastaId = id;
 
-            // 3. Ejecutamos la lógica de negocio
+            // Ejecutamos la lógica de negocio
             bool resultado = await handler.HandleAsync(command);
 
             if (!resultado)
@@ -54,7 +54,7 @@ namespace SubastaYa.Api.Controllers
             [FromBody] CrearSubastaCommand command,
             [FromServices] CrearSubastaCommandHandler handler)
         {
-            // 1. Extraemos el ID directamente del token
+            // Extraemos el ID directamente del token
             var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
                        ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
 

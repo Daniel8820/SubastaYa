@@ -20,17 +20,16 @@ namespace SubastaYa.Infrastructure.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Llamar al base para que Identity genere sus tablas de seguridad (Roles, Claims, etc.)
+            // Llamar al base para que Identity genere las tablas de seguridad (Roles, Claims, etc.)
             base.OnModelCreating(modelBuilder);
 
-            // Personalizamos el nombre de la tabla de Identity para no romper nuestra nomenclatura
             modelBuilder.Entity<Usuario>().ToTable("Usuarios");
 
-            // 1. Optimistic Locking
+            // Marcar la propiedad Version como token de concurrencia
             modelBuilder.Entity<Subasta>().Property(s => s.Version).IsConcurrencyToken();
             modelBuilder.Entity<Billetera>().Property(b => b.Version).IsConcurrencyToken();
 
-            // 2. Precisión decimal
+            // Precisión decimal
             modelBuilder.Entity<Billetera>().Property(b => b.SaldoTotal).HasPrecision(18, 2);
             modelBuilder.Entity<Billetera>().Property(b => b.SaldoRetenido).HasPrecision(18, 2);
             modelBuilder.Entity<Billetera>().Property(b => b.SaldoDisponible).HasPrecision(18, 2);
@@ -39,7 +38,7 @@ namespace SubastaYa.Infrastructure.Data
             modelBuilder.Entity<Puja>().Property(p => p.Monto).HasPrecision(18, 2);
             modelBuilder.Entity<TransaccionLedger>().Property(t => t.Monto).HasPrecision(18, 2);
 
-            // 3. Evitar borrado en cascada
+            // Evitar borrado en cascada
             modelBuilder.Entity<Puja>()
                 .HasOne(p => p.Comprador)
                 .WithMany()

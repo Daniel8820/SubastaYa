@@ -23,7 +23,7 @@ namespace SubastaYa.Application.UseCases.Subastas.ActivarSubastas
 
             foreach (var subasta in subastasParaActivar)
             {
-                subasta.Estado = "ACTIVA";
+                subasta.Estado = EstadosSubasta.Activa;
                 _subastaRepository.Actualizar(subasta);
 
                 _subastaRepository.AgregarAuditoria(new AuditoriaLog
@@ -32,7 +32,7 @@ namespace SubastaYa.Application.UseCases.Subastas.ActivarSubastas
                     EntidadId = subasta.Id,
                     Accion = "ACTIVACION_AUTOMATICA",
                     UsuarioId = null,
-                    DetalleJson = "{ \"estadoAnterior\": \"PROGRAMADA\", \"nuevoEstado\": \"ACTIVA\" }",
+                    DetalleJson = $"{{ \"estadoAnterior\": \"{EstadosSubasta.Programada}\", \"nuevoEstado\": \"{EstadosSubasta.Activa}\" }}",
                     Fecha = DateTime.UtcNow
                 });
             }

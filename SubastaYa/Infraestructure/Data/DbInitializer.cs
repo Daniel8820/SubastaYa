@@ -31,28 +31,42 @@ namespace SubastaYa.Infrastructure.Data
             {
                 var fechaBase = DateTime.UtcNow;
 
-                // Función auxiliar para encapsular los dos pasos de la nueva arquitectura
+                // Función para encapsular la creación de usuarios de prueba
                 async Task CrearUsuarioPrueba(string email, string nombre, int diasOffset, decimal sTotal, decimal sRetenido, decimal sDisponible)
                 {
-                    // A. Creamos el login en Identity
+                    // Creamos el login en Identity
                     var appUser = new ApplicationUser { UserName = email, Email = email };
                     await userManager.CreateAsync(appUser, "Clave123!");
 
-                    // B. Creamos la entidad de Dominio y anidamos la Billetera (Relación 1:1)
+                    // Nacemos la billetera limpia (los decimales en C# arrancan en 0 por defecto)
+                    var nuevaBilletera = new Billetera
+                    {
+                        Version = 1
+                    };
+
+                    // Recreamos la historia financiera del usuario usando sus reglas de negocio
+                    if (sTotal > 0)
+                    {
+                        // Esto sube SaldoTotal y SaldoDisponible
+                        nuevaBilletera.Acreditar(sTotal);
+                    }
+
+                    if (sRetenido > 0)
+                    {
+                        // Esto descuenta del SaldoDisponible y lo pasa al SaldoRetenido
+                        nuevaBilletera.RetenerFondos(sRetenido);
+                    }
+
+                    // Creamos la entidad de Dominio y anidamos la Billetera
                     var domainUser = new Usuario
                     {
                         Nombre = nombre,
                         Email = email,
                         FechaRegistro = fechaBase.AddDays(diasOffset),
                         IdentityId = appUser.Id,
-                        Billetera = new Billetera
-                        {
-                            SaldoTotal = sTotal,
-                            SaldoRetenido = sRetenido,
-                            SaldoDisponible = sDisponible,
-                            Version = 1
-                        }
+                        Billetera = nuevaBilletera
                     };
+
                     await context.Usuarios.AddAsync(domainUser);
                 }
 
