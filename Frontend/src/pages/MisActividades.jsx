@@ -10,6 +10,8 @@ const MisActividades = () => {
     const [error, setError] = useState('');
     const [pestanaActiva, setPestanaActiva] = useState(location.state?.tab || 'publicaciones');
     
+    // ESTADO PARA EL FILTRO EN MEMORIA
+    const [filtroEstado, setFiltroEstado] = useState('');
 
     useEffect(() => {
         const obtenerActividades = async () => {
@@ -20,7 +22,6 @@ const MisActividades = () => {
             }
 
             try {
-                // Consumimos el endpoint protegido de tu UsuariosController
                 const response = await fetch('https://localhost:7109/api/v1/users/me/activities', {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -43,12 +44,40 @@ const MisActividades = () => {
         obtenerActividades();
     }, [navigate]);
 
+    // LÓGICA DE FILTRADO EN MEMORIA (No toca el backend, es instantáneo)
+    const publicacionesFiltradas = actividades.misPublicaciones.filter(pub => {
+        if (filtroEstado === '') return true; // Si no hay filtro, mostramos todo
+        return pub.estado === filtroEstado;
+    });
+
+    const pujasFiltradas = actividades.misComprasYPujas.filter(part => {
+        if (filtroEstado === '') return true;
+        return part.estado === filtroEstado;
+    });
+
     if (cargando) return <div className="text-center mt-5"><h4>Cargando tus actividades...</h4></div>;
     if (error) return <div className="alert alert-danger mt-5 container">{error}</div>;
 
     return (
         <div className="container mt-4">
             <h2 className="mb-4 text-primary">Mis Actividades</h2>
+
+            {/* Panel de Filtros Rápido */}
+            <div className="bg-light p-3 rounded shadow-sm mb-4 d-flex align-items-center gap-3">
+                <label className="fw-bold text-muted mb-0">Filtrar por estado:</label>
+                <select 
+                    className="form-select w-auto" 
+                    value={filtroEstado} 
+                    onChange={(e) => setFiltroEstado(e.target.value)}
+                >
+                    <option value="">Todos los estados</option>
+                    <option value="ACTIVA">Activas</option>
+                    <option value="PROGRAMADA">Programadas</option>
+                    <option value="FINALIZADA">Finalizadas</option>
+                    <option value="CANCELADA">Canceladas</option>
+                    <option value="DESIERTA">Desiertas</option>
+                </select>
+            </div>
 
             {/* Pestañas de navegación */}
             <ul className="nav nav-tabs mb-4">
@@ -57,7 +86,7 @@ const MisActividades = () => {
                         className={`nav-link ${pestanaActiva === 'publicaciones' ? 'active fw-bold' : ''}`}
                         onClick={() => setPestanaActiva('publicaciones')}
                     >
-                        Mis Publicaciones ({actividades.misPublicaciones.length})
+                        Mis Publicaciones ({publicacionesFiltradas.length})
                     </button>
                 </li>
                 <li className="nav-item">
@@ -65,7 +94,7 @@ const MisActividades = () => {
                         className={`nav-link ${pestanaActiva === 'pujas' ? 'active fw-bold' : ''}`}
                         onClick={() => setPestanaActiva('pujas')}
                     >
-                        Mis Pujas y Compras ({actividades.misComprasYPujas.length})
+                        Mis Pujas y Compras ({pujasFiltradas.length})
                     </button>
                 </li>
             </ul>
@@ -73,10 +102,16 @@ const MisActividades = () => {
             {/* Contenido Dinámico */}
             <div className="row g-4">
                 {pestanaActiva === 'publicaciones' && (
-                    actividades.misPublicaciones.length === 0 ? (
-                        <div className="col-12"><div className="alert alert-info">No tenés publicaciones activas.</div></div>
+                    publicacionesFiltradas.length === 0 ? (
+                        <div className="col-12">
+                            <div className="alert alert-info">
+                                {actividades.misPublicaciones.length === 0 
+                                    ? "No tenés publicaciones." 
+                                    : "No tenés publicaciones que coincidan con este filtro."}
+                            </div>
+                        </div>
                     ) : (
-                        actividades.misPublicaciones.map((pub) => (
+                        publicacionesFiltradas.map((pub) => (
                             <div key={pub.id} className="col-md-6 col-lg-4">
                                 <div className={`card h-100 shadow-sm ${pub.adjudicada ? 'border-success' : ''}`}>
                                     <div className="card-body">
@@ -105,10 +140,16 @@ const MisActividades = () => {
                 )}
 
                 {pestanaActiva === 'pujas' && (
-                    actividades.misComprasYPujas.length === 0 ? (
-                        <div className="col-12"><div className="alert alert-info">Aún no participaste en ninguna subasta.</div></div>
+                    pujasFiltradas.length === 0 ? (
+                        <div className="col-12">
+                            <div className="alert alert-info">
+                                {actividades.misComprasYPujas.length === 0 
+                                    ? "Aún no participaste en ninguna subasta." 
+                                    : "No tenés participaciones que coincidan con este filtro."}
+                            </div>
+                        </div>
                     ) : (
-                        actividades.misComprasYPujas.map((part) => (
+                        pujasFiltradas.map((part) => (
                             <div key={part.id} className="col-md-6 col-lg-4">
                                 <div className={`card h-100 shadow-sm ${part.soyGanador ? 'border-warning' : ''}`}>
                                     <div className="card-body">

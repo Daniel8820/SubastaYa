@@ -20,11 +20,13 @@ namespace SubastaYa.Application.Mappings
                 Estado = subasta.Estado,
                 VendedorId = subasta.VendedorId,
                 Vendedor = subasta.Vendedor != null ? subasta.Vendedor.Nombre : "Desconocido",
+                Categoria = subasta.Categoria != null ? subasta.Categoria.Nombre : "Sin categoría",
                 PujasTotal = subasta.Pujas.Count,
                 HistorialPujas = subasta.Pujas
                     .OrderByDescending(p => p.Monto)
                     .Select(p => new PujaItemDto
                     {
+                        CompradorId = p.CompradorId,
                         Monto = p.Monto,
                         Fecha = p.FechaPuja,
                         Comprador = p.Comprador != null ? p.Comprador.Nombre : "Anónimo"
@@ -32,7 +34,6 @@ namespace SubastaYa.Application.Mappings
             };
         }
 
-        // 2. NUEVO: Mapper para los elementos individuales del catálogo
         public static SubastaListItemDto ToListItemDto(this Subasta subasta)
         {
             return new SubastaListItemDto
@@ -43,7 +44,9 @@ namespace SubastaYa.Application.Mappings
                 Estado = subasta.Estado,
                 OfertaMasAlta = subasta.Pujas.Any() ? subasta.Pujas.Max(p => p.Monto) : subasta.PrecioBase,
                 CantidadOfertas = subasta.Pujas.Count,
-                FechaFin = subasta.FechaFin
+                FechaFin = subasta.FechaFin,
+                FechaInicio = subasta.FechaInicio,
+                Categoria = subasta.Categoria != null ? subasta.Categoria.Nombre : "Sin categoría"
             };
         }
     }

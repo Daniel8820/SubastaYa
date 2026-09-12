@@ -8,6 +8,8 @@
         public string Estado { get; set; }
         public decimal OfertaMasAlta { get; set; }
         public int CantidadOfertas { get; set; }
-        public DateTime FechaFin { get; set; }
+        public DateTime FechaInicio { get; set; }
+        public DateTime FechaFin { get; set; }          
+        public string Categoria { get; set; }
     }
 }

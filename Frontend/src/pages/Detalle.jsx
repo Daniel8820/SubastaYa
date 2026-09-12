@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { formatearFechaLocal } from '../utils/formatters';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+import toast, { Toaster } from 'react-hot-toast';
+import ContadorRegresivo from '../components/ContadorRegresivo';
 
 const Detalle = () => {
     const { id } = useParams();
@@ -10,16 +12,22 @@ const Detalle = () => {
     const [error, setError] = useState('');
     const [miUsuarioId, setMiUsuarioId] = useState(null);
     
-    // --- Estados para la Puja ---
     const [montoPuja, setMontoPuja] = useState('');
-    const [mensajePuja, setMensajePuja] = useState({ tipo: '', texto: '' });
     const [enviando, setEnviando] = useState(false);
+    const [cancelando, setCancelando] = useState(false); // Estado para el botón cancelar
+    
     const location = useLocation();
     const rutaVolver = location.state?.origen || '/catalogo';
     const textoVolver = location.state?.origen === '/mis-actividades' ? 'Volver a Mis Actividades' : 'Volver al catálogo';
-    const tabDeOrigen = location.state?.tab; // Para devolverle la pestaña si es que vino de ahí
+    const tabDeOrigen = location.state?.tab;
 
-    // Extraemos la función fuera del useEffect para poder llamarla después de pujar
+    // Función para anonimizar nombres
+    const anonimizarNombre = (nombre) => {
+        if (!nombre || nombre === 'Anónimo') return 'Anónimo';
+        if (nombre.length <= 3) return nombre[0] + '***';
+        return `${nombre.substring(0, 2)}***${nombre.substring(nombre.length - 2)}`;
+    };
+
     const obtenerDetalle = async () => {
         try {
             const response = await fetch(`https://localhost:7109/api/v1/auctions/${id}`);
@@ -27,11 +35,9 @@ const Detalle = () => {
                 const data = await response.json();
                 setSubasta(data);
                 
-                // Calculamos el monto mínimo inicial para precargar el input
                 const ofertaAlta = data.historialPujas.length > 0 ? data.historialPujas[0].monto : data.precioBase;
                 const minimo = data.historialPujas.length > 0 ? ofertaAlta + data.incrementoMinimo : data.precioBase;
-                setMontoPuja(minimo); // Seteamos el valor sugerido
-                
+                setMontoPuja(minimo); 
             } else if (response.status === 404) {
                 setError('La subasta solicitada no existe.');
             } else {
@@ -45,7 +51,6 @@ const Detalle = () => {
     };
 
     useEffect(() => {
-        // --- Intentamos leer nuestro ID del Token ---
         const token = localStorage.getItem('token');
         if (token) {
             try {
@@ -55,11 +60,9 @@ const Detalle = () => {
                 console.error("Token inválido");
             }
         }
-        
         obtenerDetalle();
     }, [id]);
 
-    // --- EFECTO PARA SIGNALR ---
     useEffect(() => {
         const connection = new HubConnectionBuilder()
             .withUrl("https://localhost:7109/hubs/subasta")
@@ -68,25 +71,25 @@ const Detalle = () => {
 
         connection.start()
             .then(() => {
-                console.log("Conectado a SignalR con éxito.");
                 connection.invoke("UnirseASala", parseInt(id));
 
                 connection.on("RecibirNuevaPuja", (nuevaPuja) => {
-                    console.log("¡Alguien pujó!", nuevaPuja);
-
                     setSubasta((estadoAnterior) => {
                         if (!estadoAnterior) return estadoAnterior;
 
-                        // ESCUDO ANTI-DUPLICADOS: Si la puja actual en pantalla ya tiene 
-                        // el mismo monto que la que acaba de llegar, la ignoramos.
                         if (estadoAnterior.historialPujas.length > 0 && 
                             estadoAnterior.historialPujas[0].monto === nuevaPuja.monto) {
                             return estadoAnterior;
                         }
 
+                        if (miUsuarioId && nuevaPuja.compradorId !== miUsuarioId) {
+                            toast('¡Nueva oferta en la sala!', { icon: '🔥', style: { background: '#fff3cd' }});
+                        }
+
                         const pujaFormateada = {
                             monto: nuevaPuja.monto,
                             comprador: nuevaPuja.comprador,
+                            compradorId: nuevaPuja.compradorId,
                             fecha: nuevaPuja.fecha
                         };
 
@@ -100,45 +103,32 @@ const Detalle = () => {
             })
             .catch(err => console.error("Error al conectar con SignalR:", err));
  
-        return () => {
-            // Cerramos la conexión incondicionalmente. SignalR en el backend 
-            // ya se encarga automáticamente de sacarte de la sala (grupo) al desconectarte.
-            connection.stop();
-        };
-    }, [id]);
+        return () => connection.stop();
+    }, [id, miUsuarioId]);
 
-    // --- Sincronizar el input de oferta con la subasta ---
     useEffect(() => {
         if (subasta) {
-            // Buscamos la oferta más alta de la lista actualizada
             const ofertaAlta = subasta.historialPujas.length > 0 
                 ? subasta.historialPujas[0].monto 
                 : subasta.precioBase;
-            
-            // Calculamos cuánto es lo mínimo que se puede ofertar ahora
             const minimoRequerido = ofertaAlta + subasta.incrementoMinimo;
             
-            // Actualizamos la caja de texto
             setMontoPuja((montoActual) => {
-                // Si la caja está vacía, o si el usuario tenía escrito un valor viejo 
-                // (ej: 56000) que ahora ya no sirve, le forzamos el nuevo mínimo (57000).
                 if (!montoActual || parseFloat(montoActual) < minimoRequerido) {
                     return minimoRequerido;
                 }
-                // Si el usuario justo estaba tipeando, no se lo borramos
                 return montoActual;
             });
         }
-    }, [subasta]); // El "trigger": se ejecuta cada vez que "subasta" cambia
+    }, [subasta]); 
     
     const handlePujar = async (e) => {
         e.preventDefault();
-        setMensajePuja({ tipo: '', texto: '' });
         setEnviando(true);
 
         const token = localStorage.getItem('token');
         if (!token) {
-            setMensajePuja({ tipo: 'danger', texto: 'Debes iniciar sesión para pujar.' });
+            toast.error('Debes iniciar sesión para pujar.');
             setEnviando(false);
             return;
         }
@@ -150,100 +140,169 @@ const Detalle = () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    // Ya no mandamos el compradorId. Solo mandamos el dinero.
-                    monto: parseFloat(montoPuja)
-                })
+                body: JSON.stringify({ monto: parseFloat(montoPuja) })
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                setMensajePuja({ tipo: 'success', texto: data.mensaje });
-                obtenerDetalle(); // Recargamos para ver la nueva puja en el historial
+                toast.success('¡Puja enviada con éxito!');
+                obtenerDetalle(); 
             } else {
-                // Acá va a saltar el texto: "Ya posees la oferta más alta..."
-                setMensajePuja({ tipo: 'danger', texto: data.error || data.detail || 'Error al pujar.' });
+                toast.error(data.error || data.detail || 'Error al pujar.');
             }
         } catch (error) {
-            setMensajePuja({ tipo: 'danger', texto: 'Error de conexión con el servidor.' });
+            toast.error('Error de conexión con el servidor.');
         } finally {
             setEnviando(false);
         }
+    };
+
+    // La función que realmente hace el fetch a la API (C#)
+    const ejecutarCancelacion = async () => {
+        setCancelando(true);
+        const token = localStorage.getItem('token');
+
+        try {
+            const response = await fetch(`https://localhost:7109/api/v1/auctions/${id}/cancel`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                toast.success('Subasta cancelada exitosamente.');
+                obtenerDetalle(); // Recarga la vista para que el estado pase a CANCELADA
+            } else {
+                const data = await response.json();
+                toast.error(data.error || data.detail || 'Error al cancelar la subasta.');
+            }
+        } catch (error) {
+            toast.error('Error de conexión con el servidor.');
+        } finally {
+            setCancelando(false);
+        }
+    };
+
+    // El Toast interactivo
+    const handleCancelarSubasta = () => {
+        toast((t) => (
+            <div>
+                <p className="fw-bold mb-1 text-danger">
+                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                    ¿Cancelar subasta?
+                </p>
+                <p className="small text-muted mb-3">
+                    Esta acción no se puede deshacer y la subasta quedará inactiva permanentemente.
+                </p>
+                <div className="d-flex justify-content-end gap-2">
+                    <button 
+                        className="btn btn-sm btn-outline-secondary" 
+                        onClick={() => toast.dismiss(t.id)}
+                    >
+                        Mantener activa
+                    </button>
+                    <button 
+                        className="btn btn-sm btn-danger fw-bold" 
+                        onClick={() => {
+                            toast.dismiss(t.id); // Cerramos el toast
+                            ejecutarCancelacion(); // Disparamos la API
+                        }}
+                    >
+                        Sí, cancelar
+                    </button>
+                </div>
+            </div>
+        ), {
+            duration: Infinity, // Infinity evita que el cartel se cierre solo por tiempo
+            position: 'top-center',
+            style: { border: '1px solid #dc3545', padding: '16px', maxWidth: '400px' }
+        });
     };
 
     if (cargando) return <div className="text-center mt-5"><h4>Cargando detalle...</h4></div>;
     if (error) return <div className="alert alert-danger mt-5 container">{error}</div>;
     if (!subasta) return null;
 
+    // Lógica de liderazgo
+    const hayPujas = subasta.historialPujas.length > 0;
+    const ofertaMasAlta = hayPujas ? subasta.historialPujas[0] : null;
+    const soyLider = ofertaMasAlta?.compradorId === miUsuarioId;
+    const participe = subasta.historialPujas.some(p => p.compradorId === miUsuarioId);
+    const superado = participe && !soyLider;
+
     return (
         <div className="container mt-5">
+            <Toaster position="top-right" reverseOrder={false} /> 
+            
             <div className="mb-4">
-                <Link 
-                    to={rutaVolver} 
-                    state={tabDeOrigen ? { tab: tabDeOrigen } : null}
-                    className="btn btn-secondary btn-sm"
-                >
+                <Link to={rutaVolver} state={tabDeOrigen ? { tab: tabDeOrigen } : null} className="btn btn-secondary btn-sm">
                     &larr; {textoVolver}
                 </Link>
             </div>
 
             <div className="row">
-                {/* Columna Izquierda: Información de la Subasta */}
                 <div className="col-md-8">
                     <div className="card shadow-sm mb-4">
                         <div className="card-body">
-                            <div className="d-flex justify-content-between align-items-center mb-3">
-                                <h2 className="card-title text-primary mb-0">{subasta.titulo}</h2>
-                                <span className={`badge fs-6 ${subasta.estado === 'ACTIVA' ? 'bg-success' : 'bg-secondary'}`}>
-                                    {subasta.estado}
-                                </span>
+                            <div className="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h2 className="card-title text-primary mb-1">{subasta.titulo}</h2>
+                                    <span className="text-muted"><i className="bi bi-tag-fill me-1"></i>{subasta.categoria || 'Sin categoría'}</span>
+                                </div>
+                                <div className="text-end">
+                                    <span className={`badge fs-6 mb-2 ${subasta.estado === 'ACTIVA' ? 'bg-success' : 'bg-secondary'}`}>
+                                        {subasta.estado}
+                                    </span>
+                                    <ContadorRegresivo fechaInicio={subasta.fechaInicio} fechaFin={subasta.fechaFin} estado={subasta.estado} enDetalle={true} />
+                                </div>
                             </div>
-                            
+                            <hr />
                             <p className="lead">{subasta.descripcion}</p>
                             
-                            <hr />
-                            
-                            <div className="row text-center mt-4">
-                                <div className="col-sm-4">
-                                    <h6 className="text-muted">Precio Base</h6>
-                                    <h5>${subasta.precioBase}</h5>
+                            <div className="row text-center mt-4 bg-light p-3 rounded">
+                                <div className="col-sm-4 border-end">
+                                    <h6 className="text-muted mb-1">Precio Base</h6>
+                                    <h5 className="mb-0">${subasta.precioBase}</h5>
+                                </div>
+                                <div className="col-sm-4 border-end">
+                                    <h6 className="text-muted mb-1">Incremento Mínimo</h6>
+                                    <h5 className="mb-0">${subasta.incrementoMinimo}</h5>
                                 </div>
                                 <div className="col-sm-4">
-                                    <h6 className="text-muted">Incremento Mínimo</h6>
-                                    <h5>${subasta.incrementoMinimo}</h5>
-                                </div>
-                                <div className="col-sm-4">
-                                    <h6 className="text-muted">Vendedor</h6>
-                                    <h5>{subasta.vendedor}</h5>
+                                    <h6 className="text-muted mb-1">Vendedor</h6>
+                                    <h5 className="mb-0">{anonimizarNombre(subasta.vendedor)}</h5>
                                 </div>
                             </div>
-                        </div>
-                        <div className="card-footer text-muted text-center">
-                            Finaliza el: {formatearFechaLocal(subasta.fechaFin)}
                         </div>
                     </div>
 
-                    {/* Historial de Pujas */}
                     <div className="card shadow-sm">
-                        <div className="card-header bg-light">
-                            <h5 className="mb-0">Historial de Pujas ({subasta.pujasTotal})</h5>
+                        <div className="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                            <h5 className="mb-0"><i className="bi bi-clock-history me-2"></i>Historial de Pujas en Vivo</h5>
+                            <span className="badge bg-primary rounded-pill">{subasta.pujasTotal} ofertas</span>
                         </div>
                         <ul className="list-group list-group-flush">
-                            {subasta.historialPujas && subasta.historialPujas.length > 0 ? (
+                            {hayPujas ? (
                                 subasta.historialPujas.map((puja, index) => (
-                                    <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
+                                    <li key={index} className={`list-group-item d-flex justify-content-between align-items-center ${index === 0 ? 'bg-light' : ''}`}>
                                         <div>
-                                            <strong>{puja.comprador}</strong>
-                                            <div className="text-muted small">{formatearFechaLocal(puja.fecha)}</div>
+                                            <div className="d-flex align-items-center gap-2">
+                                                <strong>{anonimizarNombre(puja.comprador)}</strong>
+                                                {index === 0 && <span className="badge bg-warning text-dark" style={{fontSize: '0.7rem'}}>LÍDER</span>}
+                                                {puja.compradorId === miUsuarioId && <span className="badge bg-info text-dark" style={{fontSize: '0.7rem'}}>TÚ</span>}
+                                            </div>
+                                            <div className="text-muted small mt-1"><i className="bi bi-calendar-event me-1"></i>{formatearFechaLocal(puja.fecha)}</div>
                                         </div>
-                                        <span className="badge bg-primary rounded-pill fs-6">
+                                        <span className={`fs-5 fw-bold ${index === 0 ? 'text-success' : 'text-muted'}`}>
                                             ${puja.monto}
                                         </span>
                                     </li>
                                 ))
                             ) : (
-                                <li className="list-group-item text-center text-muted py-4">
+                                <li className="list-group-item text-center text-muted py-5">
+                                    <i className="bi bi-inbox fs-2 d-block mb-2"></i>
                                     Todavía no hay ofertas. ¡Sé el primero en pujar!
                                 </li>
                             )}
@@ -251,65 +310,97 @@ const Detalle = () => {
                     </div>
                 </div>
 
-                {/* Columna Derecha: Panel de Acción */}
                 <div className="col-md-4 mt-4 mt-md-0">
-                    <div className="card shadow-sm border-primary">
+                    <div className="card shadow-sm border-primary sticky-top" style={{top: '20px'}}>
                         <div className="card-body text-center">
-                            <h4 className="text-primary">Participar</h4>
-                            <p className="text-muted small mb-4">Ingresá tu oferta superando la puja actual.</p>
+                            <h4 className="text-primary mb-3">Consola de Ofertas</h4>
                             
-                            <div className="alert alert-info">
-                                <strong>Oferta más alta actual:</strong><br/>
-                                <h3>
-                                    ${subasta.historialPujas.length > 0 
-                                        ? subasta.historialPujas[0].monto 
-                                        : subasta.precioBase}
-                                </h3>
+                            <div className="bg-light rounded p-3 mb-4">
+                                <span className="text-muted small text-uppercase fw-bold">Oferta Ganadora Actual</span>
+                                <h2 className="text-success my-2">
+                                    ${ofertaMasAlta ? ofertaMasAlta.monto : subasta.precioBase}
+                                </h2>
                             </div>
 
-                            {/* Mensajes de feedback (Error o Éxito) */}
-                            {mensajePuja.texto && (
-                                <div className={`alert alert-${mensajePuja.tipo} small`}>
-                                    {mensajePuja.texto}
+                            {soyLider && (
+                                <div className="alert alert-success fw-bold p-2 mb-3">
+                                    <i className="bi bi-trophy-fill me-2"></i>¡Vas ganando la subasta!
+                                </div>
+                            )}
+                            {superado && (
+                                <div className="alert alert-danger fw-bold p-2 mb-3 animated pulse">
+                                    <i className="bi bi-exclamation-triangle-fill me-2"></i>¡Fuiste superado!
                                 </div>
                             )}
 
-                            {/* Validamos si somos el dueño de la subasta */}
                             {subasta.vendedorId === miUsuarioId ? (
-                                <div className="alert alert-warning mt-4">
-                                    <i className="bi bi-info-circle me-2"></i>
-                                    Esta es tu publicación. No podés pujar por tus propios artículos.
-                                </div>
-                            ) : (
                                 <>
-                                    <form onSubmit={handlePujar}>
-                                        <div className="input-group mb-3">
-                                            <span className="input-group-text">$</span>
+                                    <div className="alert alert-warning text-start small mb-2">
+                                        <i className="bi bi-info-circle me-2"></i>
+                                        Esta es tu publicación. No podés pujar por tus propios artículos.
+                                    </div>
+                                    
+                                    {/* Botón de Cancelación */}
+                                    {subasta.historialPujas.length === 0 && (subasta.estado === 'ACTIVA' || subasta.estado === 'PROGRAMADA') ? (
+                                        <button 
+                                            onClick={handleCancelarSubasta}
+                                            className="btn btn-outline-danger w-100 fw-bold shadow-sm mt-2"
+                                            disabled={cancelando}
+                                        >
+                                            {cancelando ? (
+                                                <><span className="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Cancelando...</>
+                                            ) : (
+                                                <><i className="bi bi-x-circle me-2"></i>Cancelar Subasta</>
+                                            )}
+                                        </button>
+                                    ) : (
+                                        subasta.historialPujas.length > 0 && (subasta.estado === 'ACTIVA' || subasta.estado === 'PROGRAMADA') && (
+                                            <div className="text-muted text-center small mt-3">
+                                                <i className="bi bi-lock-fill me-1"></i>
+                                                No podés cancelar esta subasta porque ya tiene ofertas registradas.
+                                            </div>
+                                        )
+                                    )}
+                                </>
+                            ) : (
+                                <form onSubmit={handlePujar}>
+                                    <div className="form-group mb-3 text-start">
+                                        <label className="form-label text-muted small fw-bold mb-1">Tu próxima oferta ($)</label>
+                                        <div className="input-group input-group-lg">
+                                            <span className="input-group-text bg-white"><i className="bi bi-currency-dollar"></i></span>
                                             <input 
                                                 type="number" 
-                                                className="form-control form-control-lg" 
+                                                className="form-control fw-bold text-primary" 
                                                 value={montoPuja}
                                                 onChange={(e) => setMontoPuja(e.target.value)}
                                                 step="0.01"
                                                 required
-                                                disabled={enviando || subasta.estado !== 'ACTIVA'}
+                                                disabled={enviando || subasta.estado !== 'ACTIVA' || soyLider}
                                             />
                                         </div>
-                                        <button 
-                                            type="submit" 
-                                            className="btn btn-primary w-100 btn-lg" 
-                                            disabled={enviando || subasta.estado !== 'ACTIVA'}
-                                        >
-                                            {enviando ? 'Enviando...' : 'Confirmar Puja'}
-                                        </button>
-                                    </form>
-                                    
-                                    {subasta.estado !== 'ACTIVA' && (
-                                        <div className="text-danger small mt-2">
-                                            La subasta ya no se encuentra activa.
+                                        <div className="form-text text-center mt-2">
+                                            Incremento mínimo: +${subasta.incrementoMinimo}
                                         </div>
-                                    )}
-                                </>
+                                    </div>
+                                    
+                                    <button 
+                                        type="submit" 
+                                        className="btn btn-primary btn-lg w-100 fw-bold shadow-sm" 
+                                        disabled={enviando || subasta.estado !== 'ACTIVA' || soyLider}
+                                    >
+                                        {enviando ? (
+                                            <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Enviando...</>
+                                        ) : (
+                                            'Enviar Puja'
+                                        )}
+                                    </button>
+                                </form>
+                            )}
+                            
+                            {subasta.estado !== 'ACTIVA' && subasta.estado !== 'PROGRAMADA' && (
+                                <div className="text-danger fw-bold mt-3 border border-danger rounded p-2 bg-white">
+                                    La subasta se encuentra {subasta.estado.toLowerCase()}.
+                                </div>
                             )}
                         </div>
                     </div>

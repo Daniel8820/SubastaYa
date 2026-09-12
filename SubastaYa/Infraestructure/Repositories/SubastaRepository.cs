@@ -62,6 +62,7 @@ namespace SubastaYa.Infrastructure.Repositories
         {
             var query = _context.Subastas
                 .Include(s => s.Pujas)
+                .Include(s => s.Categoria)
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(estado))

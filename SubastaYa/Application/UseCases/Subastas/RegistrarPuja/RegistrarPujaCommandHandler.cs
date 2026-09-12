@@ -112,7 +112,11 @@ namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
 
                 // Disparamos el evento a los WebSockets si el guardado en BD fue exitoso.
                 // Como acá no tenemos el nombre completo cargado, mandamos el ID para el front.
-                await _notificador.NotificarNuevaPujaAsync(command.SubastaId, command.Monto, command.CompradorNombre);
+                await _notificador.NotificarNuevaPujaAsync(
+                    command.SubastaId, 
+                    command.Monto, 
+                    command.CompradorNombre,
+                    command.CompradorId);
 
                 return true;
             }
