@@ -1,10 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using System.IdentityModel.Tokens.Jwt;
 using SubastaYa.Application.UseCases.Wallet.DepositarFondos;
 using SubastaYa.Application.UseCases.Wallet.ConsultarSaldo;
 using SubastaYa.Application.UseCases.Wallet.ObtenerHistorial;
+using SubastaYa.Application.Interfaces.Services;
 
 namespace SubastaYa.Api.Controllers
 {
@@ -13,25 +12,17 @@ namespace SubastaYa.Api.Controllers
     [Authorize]
     public class WalletController : ControllerBase
     {
-        public WalletController()
+        private readonly ICurrentUserService _currentUser;
+
+        public WalletController(ICurrentUserService currentUser)
         {
-        }
-
-        private int ObtenerUsuarioIdDelToken()
-        {
-            var claimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                       ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
-
-            if (string.IsNullOrEmpty(claimId))
-                throw new Exception("No se pudo extraer el ID del usuario desde el token.");
-
-            return int.Parse(claimId);
+            _currentUser = currentUser;
         }
 
         [HttpGet("balance")]
         public async Task<IActionResult> ConsultarSaldo([FromServices] ConsultarSaldoQueryHandler handler)
         {
-            var query = new ConsultarSaldoQuery { UsuarioId = ObtenerUsuarioIdDelToken() };
+            var query = new ConsultarSaldoQuery { UsuarioId = _currentUser.UsuarioId };
             var resultado = await handler.HandleAsync(query);
             return Ok(resultado);
         }
@@ -41,7 +32,7 @@ namespace SubastaYa.Api.Controllers
             [FromBody] DepositarFondosCommand command,
             [FromServices] DepositarFondosCommandHandler handler)
         {
-            command.UsuarioId = ObtenerUsuarioIdDelToken();
+            command.UsuarioId = _currentUser.UsuarioId;
             var nuevoTotal = await handler.HandleAsync(command);
 
             return Ok(new
@@ -54,7 +45,7 @@ namespace SubastaYa.Api.Controllers
         [HttpGet("history")]
         public async Task<IActionResult> ObtenerHistorialBilletera([FromServices] ObtenerHistorialQueryHandler handler)
         {
-            var query = new ObtenerHistorialQuery { UsuarioId = ObtenerUsuarioIdDelToken() };
+            var query = new ObtenerHistorialQuery { UsuarioId = _currentUser.UsuarioId };
             var resultado = await handler.HandleAsync(query);
             return Ok(resultado);
         }

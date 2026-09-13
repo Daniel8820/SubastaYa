@@ -29,57 +29,39 @@ namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
             var subasta = await _subastaRepository.ObtenerPorIdAsync(command.SubastaId);
             if (subasta == null) throw new DomainException("La subasta no existe.");
 
-            if (subasta.Estado != EstadosSubasta.Activa || subasta.FechaFin <= DateTime.UtcNow)
-                throw new DomainException("La subasta ya ha finalizado o no se encuentra activa.");
-
-            if (subasta.VendedorId == command.CompradorId)
-                throw new DomainException("No puedes pujar en una subasta que tú mismo has publicado.");
-
-            // 1. Regla Anti Auto-Puja
-            var pujaGanadoraActual = subasta.Pujas.OrderByDescending(p => p.Monto).FirstOrDefault();
-            if (pujaGanadoraActual != null && pujaGanadoraActual.CompradorId == command.CompradorId)
-                throw new DomainException("Ya posees la oferta más alta en esta subasta. No puedes pujar contra ti mismo.");
-
-            // 2. Validación de Monto Blindada
-            bool esPrimeraPuja = !subasta.Pujas.Any();
-            var ofertaMasAlta = esPrimeraPuja ? subasta.PrecioBase : subasta.Pujas.Max(p => p.Monto);
-
-            var montoMinimoRequerido = esPrimeraPuja && command.Monto == subasta.PrecioBase
-                ? subasta.PrecioBase
-                : ofertaMasAlta + subasta.IncrementoMinimo;
-
-            if (command.Monto < montoMinimoRequerido)
-            {
-                if (esPrimeraPuja)
-                    throw new DomainException($"La primera oferta debe ser exactamente el Precio Base (${subasta.PrecioBase}) o un mínimo de ${subasta.PrecioBase + subasta.IncrementoMinimo}.");
-                else
-                    throw new DomainException($"El monto es inválido. Debe superar la oferta actual por al menos ${subasta.IncrementoMinimo} (Mínimo: ${montoMinimoRequerido}).");
-            }
-
-            // 3. Garantía y Billetera
             var billeteraComprador = await _billeteraRepository.ObtenerPorUsuarioIdAsync(command.CompradorId);
             if (billeteraComprador == null) throw new DomainException("El comprador no tiene una billetera asociada.");
 
+            var pujaGanadoraAnterior = subasta.Pujas.OrderByDescending(p => p.Monto).FirstOrDefault();
+            var fechaFinAnterior = subasta.FechaFin;
+
+            var nuevaPuja = new Puja
+            {
+                SubastaId = subasta.Id,
+                CompradorId = command.CompradorId,
+                Monto = command.Monto,
+                FechaPuja = DateTime.UtcNow
+            };
+
+            // Delegamos la lógica al Dominio
+            bool tiempoExtendido = subasta.ProcesarPuja(nuevaPuja);
+
+            // Efectuamos compensaciones financieras
             billeteraComprador.RetenerFondos(command.Monto);
             _billeteraRepository.Actualizar(billeteraComprador);
 
-            if (pujaGanadoraActual != null)
+            if (pujaGanadoraAnterior != null)
             {
-                var billeteraAnterior = await _billeteraRepository.ObtenerPorUsuarioIdAsync(pujaGanadoraActual.CompradorId);
+                var billeteraAnterior = await _billeteraRepository.ObtenerPorUsuarioIdAsync(pujaGanadoraAnterior.CompradorId);
                 if (billeteraAnterior != null)
                 {
-                    billeteraAnterior.LiberarGarantia(pujaGanadoraActual.Monto);
+                    billeteraAnterior.LiberarGarantia(pujaGanadoraAnterior.Monto);
                     _billeteraRepository.Actualizar(billeteraAnterior);
                 }
             }
 
-            // 4. Regla Anti-Sniping con Auditoría
-            var tiempoRestante = subasta.FechaFin - DateTime.UtcNow;
-            if (tiempoRestante.TotalSeconds > 0 && tiempoRestante.TotalSeconds <= 60)
+            if (tiempoExtendido)
             {
-                var fechaFinAnterior = subasta.FechaFin;
-                subasta.FechaFin = subasta.FechaFin.AddMinutes(2);
-
                 _subastaRepository.AgregarAuditoria(new AuditoriaLog
                 {
                     Entidad = "SUBASTA",
@@ -91,23 +73,12 @@ namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
                 });
             }
 
-            // 5. <--- EL BLOQUE PERDIDO: Registrar la nueva Puja --->
-            subasta.Pujas.Add(new Puja
-            {
-                SubastaId = subasta.Id,
-                CompradorId = command.CompradorId,
-                Monto = command.Monto,
-                FechaPuja = DateTime.UtcNow
-            });
-
-            subasta.Version++;
             _subastaRepository.Actualizar(subasta);
 
             try
             {
                 await _unitOfWork.SaveChangesAsync();
 
-                // Disparamos el WebSocket con todos los datos
                 await _notificador.NotificarNuevaPujaAsync(
                     command.SubastaId,
                     command.Monto,
@@ -116,7 +87,7 @@ namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
 
                 return true;
             }
-            catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+            catch (ConcurrencyDomainException) // Atrapamos el error abstracto del dominio
             {
                 return false;
             }
