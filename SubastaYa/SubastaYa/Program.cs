@@ -1,4 +1,10 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using SubastaYa.Application.Interfaces.Persistence;
+using SubastaYa.Application.Interfaces.Services;
 using SubastaYa.Application.UseCases.Subastas.ActivarSubastas;
 using SubastaYa.Application.UseCases.Subastas.CancelarSubasta;
 using SubastaYa.Application.UseCases.Subastas.CrearSubasta;
@@ -15,11 +21,7 @@ using SubastaYa.Application.UseCases.Wallet.DepositarFondos;
 using SubastaYa.Application.UseCases.Wallet.ObtenerHistorial;
 using SubastaYa.Infrastructure.Data;
 using SubastaYa.Infrastructure.Repositories;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using SubastaYa.Application.UseCases.Usuarios.Login;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -84,6 +86,7 @@ builder.Services.AddScoped<GetMisActividadesQueryHandler>();
 builder.Services.AddScoped<RegistrarUsuarioCommandHandler>();
 builder.Services.AddScoped<ActualizarPerfilCommandHandler>();
 builder.Services.AddScoped<CambiarPasswordCommandHandler>();
+builder.Services.AddScoped<LoginCommandHandler>();
 
 builder.Services.AddScoped<ConsultarSaldoQueryHandler>();
 builder.Services.AddScoped<DepositarFondosCommandHandler>();
@@ -103,6 +106,10 @@ builder.Services.AddScoped<INotificadorSubastas, SubastaYa.Infrastructure.Signal
 // Configurar DbContext con SQL Server
 builder.Services.AddDbContext<SubastaYaDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// El servicio transversal
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, SubastaYa.Infrastructure.Services.CurrentUserService>();
 
 // Configuración de Identity
 builder.Services.AddIdentity<SubastaYa.Infrastructure.Identity.ApplicationUser, IdentityRole>(options =>

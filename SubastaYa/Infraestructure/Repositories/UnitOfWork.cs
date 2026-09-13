@@ -1,5 +1,7 @@
 ﻿using SubastaYa.Application.Interfaces.Persistence;
 using SubastaYa.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using SubastaYa.Domain.Exceptions;   
 
 namespace SubastaYa.Infrastructure.Repositories
 {
@@ -12,9 +14,18 @@ namespace SubastaYa.Infrastructure.Repositories
             _context = context;
         }
 
-        public Task<int> SaveChangesAsync(CancellationToken ct = default)
+        public async Task<int> SaveChangesAsync(CancellationToken ct = default)
         {
-            return _context.SaveChangesAsync(ct);
+            try
+            {
+                // Agregamos el await que faltaba en tu versión original
+                return await _context.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Enmascaramos el error técnico de la base de datos
+                throw new ConcurrencyDomainException("Conflicto de concurrencia detectado en la base de datos.");
+            }
         }
     }
 }
