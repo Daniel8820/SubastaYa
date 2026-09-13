@@ -22,12 +22,67 @@ const CrearSubasta = () => {
     const [enviando, setEnviando] = useState(false);
     const [pasoActual, setPasoActual] = useState(''); // Para darle feedback al usuario
 
-    // Función para manejar la selección del archivo y mostrar una miniatura
-    const handleImagenChange = (e) => {
+    // Función nativa para comprimir imágenes antes de subir
+    const comprimirImagen = (file) => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    
+                    // Definimos 800px como tope para no perder calidad en la web pero bajar drásticamente el peso
+                    const MAX_WIDTH = 800;
+                    const MAX_HEIGHT = 800;
+                    let width = img.width;
+                    let height = img.height;
+
+                    // Mantenemos la proporción original de la imagen
+                    if (width > height && width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    } else if (height > width && height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Convertimos el canvas a un archivo JPG con 70% de calidad
+                    canvas.toBlob((blob) => {
+                        const archivoComprimido = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+                            type: 'image/jpeg',
+                            lastModified: Date.now()
+                        });
+                        resolve(archivoComprimido);
+                    }, 'image/jpeg', 0.7); 
+                };
+            };
+        });
+    };
+
+    // Actualizamos el manejador del input para que use la compresión
+    const handleImagenChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
-            setImagenArchivo(file);
-            setPrevisualizacion(URL.createObjectURL(file));
+            setEnviando(true);
+            setPasoActual('Optimizando imagen...');
+            
+            try {
+                const archivoComprimido = await comprimirImagen(file);
+                setImagenArchivo(archivoComprimido);
+                setPrevisualizacion(URL.createObjectURL(archivoComprimido));
+            } catch (err) {
+                setError('Error al procesar la imagen localmente.');
+            } finally {
+                setEnviando(false);
+                setPasoActual('');
+            }
         }
     };
 
