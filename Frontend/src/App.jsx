@@ -6,6 +6,8 @@ import Navbar from './components/Navbar';
 import MisActividades from './pages/MisActividades';
 import Registro from './pages/Registro';
 import CrearSubasta from './pages/CrearSubasta';
+import Billetera from './pages/Billetera';
+import Perfil from './pages/Perfil'; // <-- NUEVO
 
 function App() {
   return (
@@ -19,6 +21,8 @@ function App() {
         <Route path="/subasta/:id" element={<Detalle />} />
         <Route path="/mis-actividades" element={<MisActividades />} />
         <Route path="/crear-subasta" element={<CrearSubasta />} />
+        <Route path="/billetera" element={<Billetera />} />
+        <Route path="/perfil" element={<Perfil />} /> {/* <-- NUEVO */}
       </Routes>
     </BrowserRouter>
   );

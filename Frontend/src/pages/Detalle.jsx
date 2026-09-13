@@ -259,6 +259,16 @@ const Detalle = () => {
                                 </div>
                             </div>
                             <hr />
+                            {subasta.urlImagen && (
+                                <div className="text-center mb-4 bg-light rounded p-2 border">
+                                    <img 
+                                        src={subasta.urlImagen} 
+                                        alt={subasta.titulo} 
+                                        className="img-fluid rounded shadow-sm" 
+                                        style={{ maxHeight: '400px', objectFit: 'contain' }} 
+                                    />
+                                </div>
+                            )}
                             <p className="lead">{subasta.descripcion}</p>
                             
                             <div className="row text-center mt-4 bg-light p-3 rounded">

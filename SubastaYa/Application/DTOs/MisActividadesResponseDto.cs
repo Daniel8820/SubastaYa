@@ -10,6 +10,7 @@
     {
         public int Id { get; set; }
         public string Titulo { get; set; }
+        public string UrlImagen { get; set; }
         public string Estado { get; set; }
         public decimal Recaudacion { get; set; }
         public bool Adjudicada { get; set; }
@@ -19,6 +20,7 @@
     {
         public int Id { get; set; }
         public string Titulo { get; set; }
+        public string UrlImagen { get; set; }
         public string Estado { get; set; }
         public decimal MiOfertaMaxima { get; set; }
         public decimal OfertaGanadoraActual { get; set; }

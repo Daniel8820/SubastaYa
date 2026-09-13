@@ -11,6 +11,7 @@ namespace SubastaYa.Application.Mappings
             {
                 Id = subasta.Id,
                 Titulo = subasta.Titulo,
+                UrlImagen = subasta.UrlImagen,
                 Estado = subasta.Estado,
                 Recaudacion = subasta.Pujas.Any() ? subasta.Pujas.Max(p => p.Monto) : 0,
                 Adjudicada = subasta.Estado == "FINALIZADA" && subasta.Pujas.Any()
@@ -23,6 +24,7 @@ namespace SubastaYa.Application.Mappings
             {
                 Id = subasta.Id,
                 Titulo = subasta.Titulo,
+                UrlImagen = subasta.UrlImagen,
                 Estado = subasta.Estado,
                 MiOfertaMaxima = subasta.Pujas.Where(p => p.CompradorId == usuarioId).Max(p => p.Monto),
                 OfertaGanadoraActual = subasta.Pujas.Any() ? subasta.Pujas.Max(p => p.Monto) : subasta.PrecioBase,
