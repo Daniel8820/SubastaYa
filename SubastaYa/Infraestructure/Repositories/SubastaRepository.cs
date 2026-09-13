@@ -54,6 +54,7 @@ namespace SubastaYa.Infrastructure.Repositories
                 .Include(s => s.Pujas)
                     .ThenInclude(p => p.Comprador)
                 .Include(s => s.Vendedor)
+                .Include(s => s.Categoria)
                 .FirstOrDefaultAsync(s => s.Id == id);
         }
 

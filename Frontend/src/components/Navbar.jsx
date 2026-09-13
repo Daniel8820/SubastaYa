@@ -36,17 +36,25 @@ const Navbar = () => {
                         <li className="nav-item">
                             <Link className="nav-link" to="/mis-actividades">Mis Actividades</Link>
                         </li>
+                        <li className="nav-item">
+                            <Link className="nav-link fw-bold text-success" to="/billetera">
+                                <i className="bi bi-wallet2 me-1"></i> Billetera
+                            </Link>
+                        </li>
                     </ul>
                     <div className="d-flex align-items-center gap-3">
                         <Link to="/crear-subasta" className="btn btn-warning btn-sm fw-bold">
                             <i className="bi bi-plus-circle me-1"></i> Publicar Subasta
                         </Link>
-                        
+                        <Link to="/perfil" className="btn btn-outline-light btn-sm d-flex align-items-center gap-2">
+                            <i className="bi bi-person-gear"></i> Mi Perfil
+                        </Link>
+
                         <button 
                             onClick={handleCerrarSesion} 
-                            className="btn btn-outline-light btn-sm d-flex align-items-center gap-2"
+                            className="btn btn-outline-danger border-0 btn-sm d-flex align-items-center gap-2"
                         >
-                            <i className="bi bi-box-arrow-right"></i> Cerrar Sesión
+                            <i className="bi bi-box-arrow-right"></i> Salir
                         </button>
                     </div>
                 </div>          

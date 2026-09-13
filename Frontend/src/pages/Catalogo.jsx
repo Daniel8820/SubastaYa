@@ -176,6 +176,14 @@ const Catalogo = () => {
                         {subastas.map((subasta) => (
                             <div className="col-12 col-md-6 col-lg-4" key={subasta.id}>
                                 <div className="card h-100 shadow-sm">
+                                    {subasta.urlImagen && (
+                                        <img 
+                                            src={subasta.urlImagen} 
+                                            className="card-img-top border-bottom" 
+                                            alt={subasta.titulo} 
+                                            style={{ height: '200px', objectFit: 'cover' }} 
+                                        />
+                                    )}
                                     <div className="card-body">
                                         {/* Título y Estado */}
                                         <div className="d-flex justify-content-between align-items-start mb-2">

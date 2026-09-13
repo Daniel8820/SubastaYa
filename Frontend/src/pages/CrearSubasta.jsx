@@ -6,18 +6,30 @@ const CrearSubasta = () => {
 
     const [titulo, setTitulo] = useState('');
     const [descripcion, setDescripcion] = useState('');
-    const [urlImagen, setUrlImagen] = useState('');
     const [precioBase, setPrecioBase] = useState('');
     const [incrementoMinimo, setIncrementoMinimo] = useState('');
     const [categoriaId, setCategoriaId] = useState('1'); 
     
-    // Valores posibles: '', 'inmediata', 'programada'
+    // NUEVO: Estado para el archivo físico de la imagen
+    const [imagenArchivo, setImagenArchivo] = useState(null);
+    const [previsualizacion, setPrevisualizacion] = useState('');
+    
     const [modoInicio, setModoInicio] = useState(''); 
     const [fechaInicio, setFechaInicio] = useState('');
     const [fechaFin, setFechaFin] = useState('');
 
     const [error, setError] = useState('');
     const [enviando, setEnviando] = useState(false);
+    const [pasoActual, setPasoActual] = useState(''); // Para darle feedback al usuario
+
+    // Función para manejar la selección del archivo y mostrar una miniatura
+    const handleImagenChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setImagenArchivo(file);
+            setPrevisualizacion(URL.createObjectURL(file));
+        }
+    };
 
     const handlePublicar = async (e) => {
         e.preventDefault();
@@ -30,18 +42,51 @@ const CrearSubasta = () => {
             return;
         }
 
-        // Determinamos qué fecha de inicio mandar al backend
-        let fechaInicioFinal;
-        if (modoInicio === 'inmediata') {
-            // Capturamos el instante exacto. El backend detectará que es la hora actual 
-            // y la marcará como "ACTIVA" automáticamente gracias a la tolerancia de 2 minutos.
-            fechaInicioFinal = new Date().toISOString(); 
-        } else {
-            // Mandamos la que el usuario programó manualmente
-            fechaInicioFinal = new Date(fechaInicio).toISOString();
+        if (!imagenArchivo) {
+            setError('Por favor, seleccioná una imagen para la subasta.');
+            setEnviando(false);
+            return;
         }
 
         try {
+            // --- FASE 1: Subir imagen a ImgBB ---
+            setPasoActual('Subiendo imagen al servidor externo...');
+            
+            const apiKey = import.meta.env.VITE_IMGBB_API_KEY; 
+            
+            // 1. Validamos que Vite haya cargado la variable de entorno
+            if (!apiKey) {
+                throw new Error("Falta la API Key. Detené la terminal de React (Ctrl+C) y volvé a levantarla.");
+            }
+            
+            const formData = new FormData();
+            // A veces ImgBB prefiere recibir la Key adentro del FormData en lugar de la URL
+            formData.append('key', apiKey); 
+            formData.append('image', imagenArchivo);
+            
+            const imgbbResponse = await fetch('https://api.imgbb.com/1/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            const imgbbData = await imgbbResponse.json();
+
+            // 2. Si ImgBB la rechaza, leemos exactamente por qué fue
+            if (!imgbbResponse.ok || !imgbbData.success) {
+                console.error("Detalle del error de ImgBB:", imgbbData);
+                throw new Error(imgbbData.error?.message || 'El servidor de imágenes rechazó el archivo.');
+            }
+
+            // Capturamos la URL pública definitiva
+            const urlImagenFinal = imgbbData.data.url;
+
+            // --- FASE 2: Registrar subasta en el backend C# ---
+            setPasoActual('Registrando subasta en la base de datos...');
+
+            let fechaInicioFinal = modoInicio === 'inmediata' 
+                ? new Date().toISOString() 
+                : new Date(fechaInicio).toISOString();
+
             const response = await fetch('https://localhost:7109/api/v1/auctions', {
                 method: 'POST',
                 headers: {
@@ -51,7 +96,7 @@ const CrearSubasta = () => {
                 body: JSON.stringify({
                     titulo,
                     descripcion,
-                    urlImagen,
+                    urlImagen: urlImagenFinal, // Inyectamos la URL que nos devolvió ImgBB
                     precioBase: parseFloat(precioBase),
                     incrementoMinimo: parseFloat(incrementoMinimo),
                     fechaInicio: fechaInicioFinal, 
@@ -68,9 +113,10 @@ const CrearSubasta = () => {
                 setError(data.detail || data.error || 'Ocurrió un error al crear la subasta.');
             }
         } catch (err) {
-            setError('Error de conexión con el servidor.');
+            setError(err.message || 'Error de conexión con el servidor.');
         } finally {
             setEnviando(false);
+            setPasoActual('');
         }
     };
 
@@ -106,9 +152,23 @@ const CrearSubasta = () => {
                                             <option value="4">Vehículos</option>
                                         </select>
                                     </div>
+                                    
+                                    {/* Zona de Carga de Imagen Física */}
                                     <div className="col-md-6 mt-3 mt-md-0">
-                                        <label className="form-label fw-bold">URL de la Imagen</label>
-                                        <input type="url" className="form-control" value={urlImagen} onChange={(e) => setUrlImagen(e.target.value)} required disabled={enviando} placeholder="https://..." />
+                                        <label className="form-label fw-bold">Fotografía del Artículo</label>
+                                        <input 
+                                            type="file" 
+                                            className="form-control" 
+                                            accept="image/png, image/jpeg, image/webp" 
+                                            onChange={handleImagenChange} 
+                                            required 
+                                            disabled={enviando} 
+                                        />
+                                        {previsualizacion && (
+                                            <div className="mt-2 text-center bg-light p-2 rounded border">
+                                                <img src={previsualizacion} alt="Previsualización" className="img-fluid rounded" style={{maxHeight: '120px', objectFit: 'cover'}} />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -165,7 +225,9 @@ const CrearSubasta = () => {
                                 </div>
 
                                 <button type="submit" className="btn btn-primary w-100 btn-lg" disabled={enviando}>
-                                    {enviando ? 'Publicando...' : 'Crear Subasta'}
+                                    {enviando ? (
+                                        <><span className="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>{pasoActual}</>
+                                    ) : 'Crear Subasta'}
                                 </button>
                             </form>
                         </div>

@@ -114,6 +114,14 @@ const MisActividades = () => {
                         publicacionesFiltradas.map((pub) => (
                             <div key={pub.id} className="col-md-6 col-lg-4">
                                 <div className={`card h-100 shadow-sm ${pub.adjudicada ? 'border-success' : ''}`}>
+                                    {pub.urlImagen && (
+                                        <img 
+                                            src={pub.urlImagen} 
+                                            className="card-img-top border-bottom" 
+                                            alt={pub.titulo} 
+                                            style={{ height: '160px', objectFit: 'cover' }} 
+                                        />
+                                    )}
                                     <div className="card-body">
                                         <h5 className="card-title text-primary">{pub.titulo}</h5>
                                         <span className={`badge mb-3 ${pub.estado === 'ACTIVA' ? 'bg-success' : 'bg-secondary'}`}>
@@ -152,6 +160,14 @@ const MisActividades = () => {
                         pujasFiltradas.map((part) => (
                             <div key={part.id} className="col-md-6 col-lg-4">
                                 <div className={`card h-100 shadow-sm ${part.soyGanador ? 'border-warning' : ''}`}>
+                                    {part.urlImagen && (
+                                        <img 
+                                            src={part.urlImagen} 
+                                            className="card-img-top border-bottom" 
+                                            alt={part.titulo} 
+                                            style={{ height: '160px', objectFit: 'cover' }} 
+                                        />
+                                    )}
                                     <div className="card-body">
                                         <h5 className="card-title text-primary">{part.titulo}</h5>
                                         <span className={`badge mb-3 ${part.estado === 'ACTIVA' ? 'bg-success' : 'bg-secondary'}`}>
