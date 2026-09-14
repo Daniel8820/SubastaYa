@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { formatearFechaLocal } from '../utils/formatters';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
-import toast, { Toaster } from 'react-hot-toast';
 import ContadorRegresivo from '../components/ContadorRegresivo';
+import toast from 'react-hot-toast';
 
 const Detalle = () => {
     const { id } = useParams();
@@ -14,7 +14,9 @@ const Detalle = () => {
     
     const [montoPuja, setMontoPuja] = useState('');
     const [enviando, setEnviando] = useState(false);
-    const [cancelando, setCancelando] = useState(false); // Estado para el botón cancelar
+    const [cancelando, setCancelando] = useState(false);
+    const [imagenCargada, setImagenCargada] = useState(false);
+    const [errorImagen, setErrorImagen] = useState(false);
     
     const location = useLocation();
     const rutaVolver = location.state?.origen || '/catalogo';
@@ -158,7 +160,6 @@ const Detalle = () => {
         }
     };
 
-    // La función que realmente hace el fetch a la API (C#)
     const ejecutarCancelacion = async () => {
         setCancelando(true);
         const token = localStorage.getItem('token');
@@ -173,7 +174,7 @@ const Detalle = () => {
 
             if (response.ok) {
                 toast.success('Subasta cancelada exitosamente.');
-                obtenerDetalle(); // Recarga la vista para que el estado pase a CANCELADA
+                obtenerDetalle();
             } else {
                 const data = await response.json();
                 toast.error(data.error || data.detail || 'Error al cancelar la subasta.');
@@ -185,7 +186,7 @@ const Detalle = () => {
         }
     };
 
-    // El Toast interactivo
+    // Toast interactivo
     const handleCancelarSubasta = () => {
         toast((t) => (
             <div>
@@ -206,8 +207,8 @@ const Detalle = () => {
                     <button 
                         className="btn btn-sm btn-danger fw-bold" 
                         onClick={() => {
-                            toast.dismiss(t.id); // Cerramos el toast
-                            ejecutarCancelacion(); // Disparamos la API
+                            toast.dismiss(t.id);
+                            ejecutarCancelacion();
                         }}
                     >
                         Sí, cancelar
@@ -215,13 +216,18 @@ const Detalle = () => {
                 </div>
             </div>
         ), {
-            duration: Infinity, // Infinity evita que el cartel se cierre solo por tiempo
+            duration: Infinity, // Evita que el cartel se cierre por tiempo
             position: 'top-center',
             style: { border: '1px solid #dc3545', padding: '16px', maxWidth: '400px' }
         });
     };
 
-    if (cargando) return <div className="text-center mt-5"><h4>Cargando detalle...</h4></div>;
+    if (cargando) return (
+        <div className="text-center mt-5 py-5">
+            <div className="spinner-border text-primary" role="status"></div>
+            <h5 className="mt-3 text-muted">Cargando detalle...</h5>
+        </div>
+    );
     if (error) return <div className="alert alert-danger mt-5 container">{error}</div>;
     if (!subasta) return null;
 
@@ -234,8 +240,6 @@ const Detalle = () => {
 
     return (
         <div className="container mt-5">
-            <Toaster position="top-right" reverseOrder={false} /> 
-            
             <div className="mb-4">
                 <Link to={rutaVolver} state={tabDeOrigen ? { tab: tabDeOrigen } : null} className="btn btn-secondary btn-sm">
                     &larr; {textoVolver}
@@ -260,12 +264,34 @@ const Detalle = () => {
                             </div>
                             <hr />
                             {subasta.urlImagen && (
-                                <div className="text-center mb-4 bg-light rounded p-2 border">
+                                <div 
+                                    className="mb-4 bg-light rounded border d-flex flex-column align-items-center justify-content-center p-3" 
+                                    style={{ minHeight: '300px' }}
+                                >
+                                    {/* Spinner de descarga de ImgBB */}
+                                    {!imagenCargada && !errorImagen && (
+                                        <div className="text-muted text-center py-5">
+                                            <div className="spinner-border text-primary mb-2" role="status"></div>
+                                            <div className="small fw-bold">Cargando imagen...</div>
+                                        </div>
+                                    )}
+
+                                    {/* Si el link está roto o ImgBB falla */}
+                                    {errorImagen && (
+                                        <div className="text-muted text-center py-5">
+                                            <i className="bi bi-image text-secondary mb-2" style={{ fontSize: '2.5rem' }}></i>
+                                            <div className="small fw-bold">Imagen no disponible</div>
+                                        </div>
+                                    )}
+
+                                    {/* Imágen real */}
                                     <img 
                                         src={subasta.urlImagen} 
                                         alt={subasta.titulo} 
-                                        className="img-fluid rounded shadow-sm" 
+                                        className={`img-fluid rounded shadow-sm ${imagenCargada && !errorImagen ? 'd-block' : 'd-none'}`} 
                                         style={{ maxHeight: '400px', objectFit: 'contain' }} 
+                                        onLoad={() => setImagenCargada(true)}
+                                        onError={() => setErrorImagen(true)}
                                     />
                                 </div>
                             )}
@@ -350,7 +376,7 @@ const Detalle = () => {
                                         Esta es tu publicación. No podés pujar por tus propios artículos.
                                     </div>
                                     
-                                    {/* Botón de Cancelación */}
+                                    {/* Botón de cancelación */}
                                     {subasta.historialPujas.length === 0 && (subasta.estado === 'ACTIVA' || subasta.estado === 'PROGRAMADA') ? (
                                         <button 
                                             onClick={handleCancelarSubasta}
@@ -383,6 +409,7 @@ const Detalle = () => {
                                                 className="form-control fw-bold text-primary" 
                                                 value={montoPuja}
                                                 onChange={(e) => setMontoPuja(e.target.value)}
+                                                onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
                                                 step="0.01"
                                                 required
                                                 disabled={enviando || subasta.estado !== 'ACTIVA' || soyLider}

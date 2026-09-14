@@ -19,7 +19,7 @@ namespace SubastaYa.Infrastructure.Services
             {
                 var idString = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
                             ?? _httpContextAccessor.HttpContext?.User?.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
-                return string.IsNullOrEmpty(idString) ? 0 : int.Parse(idString);
+                return int.TryParse(idString, out var parsedId) ? parsedId : 0;
             }
         }
 

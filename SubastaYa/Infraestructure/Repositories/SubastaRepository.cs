@@ -70,7 +70,7 @@ namespace SubastaYa.Infrastructure.Repositories
                 query = query.Where(s => s.Estado.ToUpper() == estado.ToUpper());
             else
             {
-                // REGLA DE NEGOCIO: Si pide "Todos", limpiamos la basura del catálogo público
+                // Regla de negocio - Si pide "Todos", limpiamos la basura del catálogo público
                 query = query.Where(s =>
                     s.Estado != EstadosSubasta.Cancelada &&
                     s.Estado != EstadosSubasta.Desierta);

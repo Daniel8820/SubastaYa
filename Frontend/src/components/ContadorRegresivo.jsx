@@ -43,7 +43,7 @@ const ContadorRegresivo = ({ fechaInicio, fechaFin, estado, enDetalle = false })
         return <span className="text-muted d-block mt-1 fw-bold">Subasta {estado.toLowerCase()}</span>;
     }
 
-    // LÓGICA DE ZONA CRÍTICA: Menos de 1 minuto restante y está activa
+    // Lógica de zona crítica, menos de 1 minuto restante y se activa
     const esCritico = tiempo && tiempo.totalMilisegundos < 60000 && !esProgramada;
 
     return (

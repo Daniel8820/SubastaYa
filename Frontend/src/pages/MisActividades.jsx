@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import ImagenTarjeta from '../components/ImagenTarjeta';
 
 const MisActividades = () => {
     const navigate = useNavigate();
@@ -10,41 +11,48 @@ const MisActividades = () => {
     const [error, setError] = useState('');
     const [pestanaActiva, setPestanaActiva] = useState(location.state?.tab || 'publicaciones');
     
-    // ESTADO PARA EL FILTRO EN MEMORIA
     const [filtroEstado, setFiltroEstado] = useState('');
 
     useEffect(() => {
-        const obtenerActividades = async () => {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                navigate('/login');
-                return;
-            }
+        const context = { isMounted: true };
 
-            try {
-                const response = await fetch('https://localhost:7109/api/v1/users/me/activities', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    setActividades(data);
-                } else {
-                    setError('Error al cargar las actividades.');
+        const timeoutId = setTimeout(() => {
+            const obtenerActividades = async () => {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    navigate('/login');
+                    return;
                 }
-            } catch (err) {
-                setError('Error de conexión con el servidor.');
-            } finally {
-                setCargando(false);
-            }
-        };
 
-        obtenerActividades();
+                try {
+                    const response = await fetch('https://localhost:7109/api/v1/users/me/activities', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (context.isMounted) setActividades(data);
+                    } else {
+                        if (context.isMounted) setError('Error al cargar las actividades.');
+                    }
+                } catch (err) {
+                    if (context.isMounted) setError('Error de conexión con el servidor.');
+                } finally {
+                    if (context.isMounted) setCargando(false);
+                }
+            };
+
+            obtenerActividades();
+        }, 250);
+
+        return () => {
+            context.isMounted = false;
+            clearTimeout(timeoutId);
+        };
     }, [navigate]);
 
-    // LÓGICA DE FILTRADO EN MEMORIA (No toca el backend, es instantáneo)
     const publicacionesFiltradas = actividades.misPublicaciones.filter(pub => {
         if (filtroEstado === '') return true; // Si no hay filtro, mostramos todo
         return pub.estado === filtroEstado;
@@ -55,14 +63,19 @@ const MisActividades = () => {
         return part.estado === filtroEstado;
     });
 
-    if (cargando) return <div className="text-center mt-5"><h4>Cargando tus actividades...</h4></div>;
+    if (cargando) return (
+        <div className="text-center mt-5 py-5">
+            <div className="spinner-border text-primary" role="status"></div>
+            <h5 className="mt-3 text-muted">Cargando tus actividades...</h5>
+        </div>
+    );
     if (error) return <div className="alert alert-danger mt-5 container">{error}</div>;
 
     return (
         <div className="container mt-4">
-            <h2 className="mb-4 text-primary">Mis Actividades</h2>
+            <h2 className="mb-4 text-dark">Mis Actividades</h2>
 
-            {/* Panel de Filtros Rápido */}
+            {/* Panel de filtros rápido */}
             <div className="bg-light p-3 rounded shadow-sm mb-4 d-flex align-items-center gap-3">
                 <label className="fw-bold text-muted mb-0">Filtrar por estado:</label>
                 <select 
@@ -99,7 +112,7 @@ const MisActividades = () => {
                 </li>
             </ul>
 
-            {/* Contenido Dinámico */}
+            {/* Contenido dinámico */}
             <div className="row g-4">
                 {pestanaActiva === 'publicaciones' && (
                     publicacionesFiltradas.length === 0 ? (
@@ -113,15 +126,12 @@ const MisActividades = () => {
                     ) : (
                         publicacionesFiltradas.map((pub) => (
                             <div key={pub.id} className="col-md-6 col-lg-4">
-                                <div className={`card h-100 shadow-sm ${pub.adjudicada ? 'border-success' : ''}`}>
-                                    {pub.urlImagen && (
-                                        <img 
-                                            src={pub.urlImagen} 
-                                            className="card-img-top border-bottom" 
-                                            alt={pub.titulo} 
-                                            style={{ height: '160px', objectFit: 'cover' }} 
-                                        />
-                                    )}
+                                <div className={`card h-100 shadow-sm border-0 hover-animado ${pub.adjudicada ? 'border-success' : ''}`}>
+                                    <ImagenTarjeta 
+                                        src={pub.urlImagen} 
+                                        alt={pub.titulo} 
+                                        height="160px" 
+                                    />
                                     <div className="card-body">
                                         <h5 className="card-title text-primary">{pub.titulo}</h5>
                                         <span className={`badge mb-3 ${pub.estado === 'ACTIVA' ? 'bg-success' : 'bg-secondary'}`}>
@@ -159,7 +169,7 @@ const MisActividades = () => {
                     ) : (
                         pujasFiltradas.map((part) => (
                             <div key={part.id} className="col-md-6 col-lg-4">
-                                <div className={`card h-100 shadow-sm ${part.soyGanador ? 'border-warning' : ''}`}>
+                                <div className={`card h-100 shadow-sm border-0 hover-animado ${part.soyGanador ? 'border-warning' : ''}`}>
                                     {part.urlImagen && (
                                         <img 
                                             src={part.urlImagen} 

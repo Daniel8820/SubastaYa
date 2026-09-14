@@ -13,7 +13,7 @@
         // Ej: EXTENSION_TIEMPO, CIERRE_WORKER
         public string Accion { get; set; }
 
-        // Nullable, porque si la acción la ejecuta el Worker en segundo plano, no hay usuario
+        // Nullable, si la acción la ejecuta el Worker en segundo plano, no hay usuario
         public int? UsuarioId { get; set; }
 
         // Payload con los cambios en formato JSON

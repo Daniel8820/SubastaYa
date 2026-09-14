@@ -43,10 +43,10 @@ namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
                 FechaPuja = DateTime.UtcNow
             };
 
-            // Delegamos la lógica al Dominio
+            // Delegación de lógica al Dominio
             bool tiempoExtendido = subasta.ProcesarPuja(nuevaPuja);
 
-            // Efectuamos compensaciones financieras
+            // Compensaciones financieras
             billeteraComprador.RetenerFondos(command.Monto);
             _billeteraRepository.Actualizar(billeteraComprador);
 
@@ -87,7 +87,7 @@ namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
 
                 return true;
             }
-            catch (ConcurrencyDomainException) // Atrapamos el error abstracto del dominio
+            catch (ConcurrencyDomainException)
             {
                 return false;
             }

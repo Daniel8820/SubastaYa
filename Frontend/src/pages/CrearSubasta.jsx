@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 const CrearSubasta = () => {
     const navigate = useNavigate();
@@ -20,7 +20,7 @@ const CrearSubasta = () => {
 
     const [error, setError] = useState('');
     const [enviando, setEnviando] = useState(false);
-    const [pasoActual, setPasoActual] = useState(''); // Para darle feedback al usuario
+    const [pasoActual, setPasoActual] = useState('');
 
     // Función nativa para comprimir imágenes antes de subir
     const comprimirImagen = (file) => {
@@ -33,13 +33,13 @@ const CrearSubasta = () => {
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     
-                    // Definimos 800px como tope para no perder calidad en la web pero bajar drásticamente el peso
+                    // 800px como tope para no perder calidad en la web pero bajar el peso
                     const MAX_WIDTH = 800;
                     const MAX_HEIGHT = 800;
                     let width = img.width;
                     let height = img.height;
 
-                    // Mantenemos la proporción original de la imagen
+                    // Mantiene la proporción original de la imagen
                     if (width > height && width > MAX_WIDTH) {
                         height *= MAX_WIDTH / width;
                         width = MAX_WIDTH;
@@ -53,7 +53,7 @@ const CrearSubasta = () => {
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
 
-                    // Convertimos el canvas a un archivo JPG con 70% de calidad
+                    // Convertimos el canvas a JPG con 70% de calidad
                     canvas.toBlob((blob) => {
                         const archivoComprimido = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
                             type: 'image/jpeg',
@@ -66,7 +66,7 @@ const CrearSubasta = () => {
         });
     };
 
-    // Actualizamos el manejador del input para que use la compresión
+    // Manejador del input para que use la compresión
     const handleImagenChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -104,18 +104,18 @@ const CrearSubasta = () => {
         }
 
         try {
-            // --- FASE 1: Subir imagen a ImgBB ---
+            // Subir imagen a ImgBB
             setPasoActual('Subiendo imagen al servidor externo...');
             
             const apiKey = import.meta.env.VITE_IMGBB_API_KEY; 
             
-            // 1. Validamos que Vite haya cargado la variable de entorno
+            // Validación que Vite haya cargado la variable de entorno
             if (!apiKey) {
                 throw new Error("Falta la API Key. Detené la terminal de React (Ctrl+C) y volvé a levantarla.");
             }
             
             const formData = new FormData();
-            // A veces ImgBB prefiere recibir la Key adentro del FormData en lugar de la URL
+            
             formData.append('key', apiKey); 
             formData.append('image', imagenArchivo);
             
@@ -126,16 +126,15 @@ const CrearSubasta = () => {
 
             const imgbbData = await imgbbResponse.json();
 
-            // 2. Si ImgBB la rechaza, leemos exactamente por qué fue
             if (!imgbbResponse.ok || !imgbbData.success) {
                 console.error("Detalle del error de ImgBB:", imgbbData);
                 throw new Error(imgbbData.error?.message || 'El servidor de imágenes rechazó el archivo.');
             }
 
-            // Capturamos la URL pública definitiva
+            // Capturamos la URL pública
             const urlImagenFinal = imgbbData.data.url;
 
-            // --- FASE 2: Registrar subasta en el backend C# ---
+            // Registrar subasta en el backend
             setPasoActual('Registrando subasta en la base de datos...');
 
             let fechaInicioFinal = modoInicio === 'inmediata' 
@@ -151,7 +150,7 @@ const CrearSubasta = () => {
                 body: JSON.stringify({
                     titulo,
                     descripcion,
-                    urlImagen: urlImagenFinal, // Inyectamos la URL que nos devolvió ImgBB
+                    urlImagen: urlImagenFinal,
                     precioBase: parseFloat(precioBase),
                     incrementoMinimo: parseFloat(incrementoMinimo),
                     fechaInicio: fechaInicioFinal, 
@@ -179,6 +178,13 @@ const CrearSubasta = () => {
         <div className="container mt-4 mb-5">
             <div className="row justify-content-center">
                 <div className="col-md-10 col-lg-8">
+                    
+                    {/* Botón movido dentro de la columna centrada */}
+                    <div className="mb-4 text-start">
+                        <Link to="/catalogo" className="btn btn-secondary btn-sm">
+                            &larr; Volver al catálogo
+                        </Link>
+                    </div>
                     <div className="card shadow-sm border-primary">
                         <div className="card-header bg-primary text-white">
                             <h4 className="mb-0 text-center"><i className="bi bi-tag-fill me-2"></i>Publicar nueva Subasta</h4>
@@ -205,10 +211,11 @@ const CrearSubasta = () => {
                                             <option value="2">Coleccionables</option>
                                             <option value="3">Indumentaria</option>
                                             <option value="4">Vehículos</option>
+                                            <option value="5">Otros</option>
                                         </select>
                                     </div>
                                     
-                                    {/* Zona de Carga de Imagen Física */}
+                                    {/* Carga de imágen física */}
                                     <div className="col-md-6 mt-3 mt-md-0">
                                         <label className="form-label fw-bold">Fotografía del Artículo</label>
                                         <input 
@@ -230,11 +237,31 @@ const CrearSubasta = () => {
                                 <div className="row mb-4">
                                     <div className="col-md-6">
                                         <label className="form-label fw-bold">Precio Base ($)</label>
-                                        <input type="number" step="0.01" min="1" className="form-control" value={precioBase} onChange={(e) => setPrecioBase(e.target.value)} required disabled={enviando} />
+                                        <input 
+                                            type="number" 
+                                            step="0.01" 
+                                            min="1" 
+                                            className="form-control" 
+                                            value={precioBase} 
+                                            onChange={(e) => setPrecioBase(e.target.value)} 
+                                            onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
+                                            required 
+                                            disabled={enviando} 
+                                        />
                                     </div>
                                     <div className="col-md-6 mt-3 mt-md-0">
                                         <label className="form-label fw-bold">Incremento Mín. ($)</label>
-                                        <input type="number" step="0.01" min="1" className="form-control" value={incrementoMinimo} onChange={(e) => setIncrementoMinimo(e.target.value)} required disabled={enviando} />
+                                        <input 
+                                            type="number" 
+                                            step="0.01" 
+                                            min="1" 
+                                            className="form-control" 
+                                            value={incrementoMinimo} 
+                                            onChange={(e) => setIncrementoMinimo(e.target.value)} 
+                                            onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
+                                            required 
+                                            disabled={enviando} 
+                                        />
                                     </div>
                                 </div>
 

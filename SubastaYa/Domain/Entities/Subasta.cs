@@ -27,7 +27,7 @@ namespace SubastaYa.Domain.Entities
         // Propiedades de navegación
         public Usuario Vendedor { get; set; }
         public Categoria Categoria { get; set; }
-        public ICollection<Puja> Pujas { get; set; }
+        public ICollection<Puja> Pujas { get; set; } = new List<Puja>();
 
         public bool ProcesarPuja(Puja nuevaPuja)
         {
@@ -64,7 +64,7 @@ namespace SubastaYa.Domain.Entities
             }
 
             Pujas.Add(nuevaPuja);
-            Version++; // Avanzamos el token de concurrencia
+            Version++;
 
             return tiempoExtendido;
         }

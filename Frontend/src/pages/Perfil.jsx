@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 const Perfil = () => {
     const navigate = useNavigate();
     
-    // Estados para el Cambio de Nombre
+    // Estados para el cambio de nombre
     const [nombreActual, setNombreActual] = useState('');
     const [nuevoNombre, setNuevoNombre] = useState('');
+    const [emailActual, setEmailActual] = useState('');
     const [actualizandoNombre, setActualizandoNombre] = useState(false);
 
-    // Estados para el Cambio de Contraseña
+    // Estados para el cambio de contraseña
     const [passwordActual, setPasswordActual] = useState('');
     const [passwordNueva, setPasswordNueva] = useState('');
     const [confirmarPassword, setConfirmarPassword] = useState('');
@@ -24,11 +25,13 @@ const Perfil = () => {
         }
         
         try {
-            // Decodificamos el token para sacar el nombre actual y mostrarlo
+            // Mostrar el nombre actual y el email
             const payload = JSON.parse(atob(token.split('.')[1]));
             const nombreDelToken = payload.nombre || '';
+            const emailDelToken = payload.email || '';
             setNombreActual(nombreDelToken);
             setNuevoNombre(nombreDelToken);
+            setEmailActual(emailDelToken);
         } catch (error) {
             console.error("Error al decodificar token", error);
         }
@@ -46,7 +49,6 @@ const Perfil = () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                // El backend (ActualizarPerfilCommand) espera "nuevoNombre"
                 body: JSON.stringify({ nuevoNombre }) 
             });
 
@@ -55,9 +57,6 @@ const Perfil = () => {
             if (response.ok) {
                 toast.success('¡Nombre actualizado con éxito!');
                 setNombreActual(nuevoNombre);
-                // Nota: El token viejo sigue teniendo el nombre anterior. 
-                // Para ver el nombre nuevo en toda la app capaz tengan que volver a iniciar sesión,
-                // pero la base de datos ya está actualizada.
             } else {
                 toast.error(data.error || data.detail || 'Error al actualizar el perfil.');
             }
@@ -86,7 +85,6 @@ const Perfil = () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                // El backend (CambiarPasswordCommand) espera estos nombres exactos
                 body: JSON.stringify({ passwordActual, passwordNueva }) 
             });
 
@@ -108,11 +106,10 @@ const Perfil = () => {
 
     return (
         <div className="container mt-5 mb-5">
-            <Toaster position="top-right" />
             <h2 className="mb-4 text-primary"><i className="bi bi-person-gear me-2"></i>Ajustes de Perfil</h2>
 
             <div className="row g-4">
-                {/* Columna Izquierda: Cambio de Nombre */}
+                {/* Columna izquierda - Cambio de nombre */}
                 <div className="col-md-6">
                     <div className="card shadow-sm h-100">
                         <div className="card-header bg-white py-3">
@@ -120,6 +117,15 @@ const Perfil = () => {
                         </div>
                         <div className="card-body">
                             <form onSubmit={handleActualizarNombre}>
+                                <div className="mb-3">
+                                    <label className="form-label text-muted small fw-bold">Correo Electrónico</label>
+                                    <input 
+                                        type="email" 
+                                        className="form-control bg-light text-muted" 
+                                        value={emailActual}
+                                        disabled 
+                                    />
+                                </div>
                                 <div className="mb-3">
                                     <label className="form-label text-muted small fw-bold">Nombre o Apodo Actual</label>
                                     <input 
@@ -152,7 +158,7 @@ const Perfil = () => {
                     </div>
                 </div>
 
-                {/* Columna Derecha: Cambio de Contraseña */}
+                {/* Columna derecha - Cambio de contraseña */}
                 <div className="col-md-6">
                     <div className="card shadow-sm h-100 border-warning">
                         <div className="card-header bg-white py-3 border-warning">

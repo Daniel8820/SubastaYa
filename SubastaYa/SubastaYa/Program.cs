@@ -23,6 +23,7 @@ using SubastaYa.Infrastructure.Data;
 using SubastaYa.Infrastructure.Repositories;
 using SubastaYa.Application.UseCases.Usuarios.Login;
 using System.Text;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,14 +35,37 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendCors", policy =>
     {
-        policy.WithOrigins("http://localhost:5173") // El puerto por defecto de Vite
+        policy.WithOrigins("http://localhost:5173") // Puerto por defecto de Vite
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials(); // Para que SignalR funcione con WebSockets
     });
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            // Mensajes de error nativos de ASP.NET
+            var errores = context.ModelState
+                .Where(e => e.Value.Errors.Count > 0)
+                .SelectMany(x => x.Value.Errors)
+                .Select(x => x.ErrorMessage);
+
+            // Empaquetamos usando la misma estructura del ExceptionMiddleware
+            var problemDetails = new
+            {
+                title = "Error de formato en los datos",
+                status = 400,
+                detail = string.Join(" ", errores),
+                instance = context.HttpContext.Request.Path
+            };
+
+            return new BadRequestObjectResult(problemDetails);
+        };
+    });
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -95,9 +119,9 @@ builder.Services.AddScoped<ObtenerHistorialQueryHandler>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
 // Registramos el puente de autenticación de Identity
-builder.Services.AddScoped<SubastaYa.Application.Interfaces.Services.IAuthService, SubastaYa.Infrastructure.Services.AuthService>();
+builder.Services.AddScoped<IAuthService, SubastaYa.Infrastructure.Services.AuthService>();
 
-//Worker
+// Worker
 builder.Services.AddHostedService<SubastaYa.Infrastructure.Workers.SubastaBackgroundWorker>();
 
 // Notificador
@@ -123,7 +147,8 @@ builder.Services.AddIdentity<SubastaYa.Infrastructure.Identity.ApplicationUser, 
     options.User.RequireUniqueEmail = true;
 })
 .AddEntityFrameworkStores<SubastaYaDbContext>()
-.AddDefaultTokenProviders();
+.AddDefaultTokenProviders()
+.AddErrorDescriber<SubastaYa.Infrastructure.Identity.CustomIdentityErrorDescriber>();
 
 // -------------------------------------------------------------------------
 // Registro de Repositorios y Unit of Work para la Arquitectura Limpia
@@ -155,7 +180,7 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidAudience = jwtSettings.GetValue<string>("Audience"),
         ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero // Para que el token caduque exactamente a tiempo
+        ClockSkew = TimeSpan.Zero
     };
 });
 
@@ -164,24 +189,24 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Ejecutamos el Seeder Dinámico
+// Ejecutamos el Seeder dinámico
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
-        // Llamamos a nuestro método estático de inicialización
+        // Método estático de inicialización
         await DbInitializer.SeedDataAsync(services);
     }
     catch (Exception ex)
     {
-        // Si algo falla al cargar los datos, lo registramos en la consola
+        // Si algo falla al cargar los datos, se registra en la consola
         var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "Ocurrió un error al poblar la base de datos.");
     }
 }
 
-// Registramos nuestro middleware global de excepciones al inicio del pipeline
+// Registro del Middleware global de excepciones al inicio del pipeline
 app.UseMiddleware<SubastaYa.Api.Middlewares.ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())

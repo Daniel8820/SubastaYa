@@ -38,7 +38,6 @@ namespace SubastaYa.Application.UseCases.Subastas.FinalizarSubastas
                     var billeteraVendedor = await _billeteraRepository.ObtenerPorUsuarioIdAsync(subasta.VendedorId);
                     if (billeteraVendedor != null)
                     {
-                        // Reemplazamos la suma manual por el método de dominio
                         billeteraVendedor.Acreditar(pujaGanadora.Monto);
                         _billeteraRepository.Actualizar(billeteraVendedor);
 
@@ -54,8 +53,7 @@ namespace SubastaYa.Application.UseCases.Subastas.FinalizarSubastas
 
                     var billeteraComprador = await _billeteraRepository.ObtenerPorUsuarioIdAsync(pujaGanadora.CompradorId);
                     if (billeteraComprador != null)
-                    {
-                        // Reemplazamos la resta manual por el método de dominio
+                    {  
                         billeteraComprador.DescontarPago(pujaGanadora.Monto);
                         _billeteraRepository.Actualizar(billeteraComprador);
 
