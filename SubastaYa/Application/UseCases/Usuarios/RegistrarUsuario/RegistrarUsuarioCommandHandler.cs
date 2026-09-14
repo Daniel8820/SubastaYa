@@ -24,7 +24,7 @@ namespace SubastaYa.Application.UseCases.Usuarios.RegistrarUsuario
             // 1. Delegamos a la infraestructura la creación de la clave y el token
             string nuevoIdentityId = await _authService.RegistrarLoginAsync(command.Email, command.Password);
 
-            // 2. Creamos la entidad pura de nuestro dominio
+            // 2. Creamos la entidad en el Dominio
             var nuevoUsuario = new Usuario
             {
                 Nombre = command.Nombre,
@@ -37,7 +37,7 @@ namespace SubastaYa.Application.UseCases.Usuarios.RegistrarUsuario
                 }
             };
 
-            // 3. Guardamos en nuestra tabla del negocio
+            // 3. Guardamos en la tabla del negocio
             await _usuarioRepository.AgregarAsync(nuevoUsuario);
             await _unitOfWork.SaveChangesAsync();
 

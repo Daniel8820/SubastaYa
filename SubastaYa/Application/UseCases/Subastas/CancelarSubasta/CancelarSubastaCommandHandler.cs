@@ -29,11 +29,11 @@ namespace SubastaYa.Application.UseCases.Subastas.CancelarSubasta
             if (subasta.Estado != EstadosSubasta.Activa && subasta.Estado != EstadosSubasta.Programada)
                 throw new DomainException("Solo se pueden cancelar subastas activas o programadas.");
 
-            // Regla de negocio - Cancelacion
+            // Regla de negocio - Cancelación
             if (subasta.Pujas.Any())
                 throw new DomainException("No se puede cancelar una subasta que ya posee ofertas registradas.");
 
-            // Guardamos el estado anterior para el log
+            // Guardamos el estado anterior para el Log
             string estadoAnterior = subasta.Estado;
 
             // Cambiamos el estado
@@ -51,7 +51,7 @@ namespace SubastaYa.Application.UseCases.Subastas.CancelarSubasta
                 Fecha = DateTime.UtcNow
             });
 
-            // Impactamos todo en la base de datos atómicamente
+            // Guardado atómico
             await _unitOfWork.SaveChangesAsync();
 
             return true;

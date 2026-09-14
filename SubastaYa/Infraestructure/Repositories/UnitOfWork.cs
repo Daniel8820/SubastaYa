@@ -18,13 +18,15 @@ namespace SubastaYa.Infrastructure.Repositories
         {
             try
             {
-                // Agregamos el await que faltaba en tu versión original
                 return await _context.SaveChangesAsync(ct);
             }
             catch (DbUpdateConcurrencyException)
             {
-                // Enmascaramos el error técnico de la base de datos
                 throw new ConcurrencyDomainException("Conflicto de concurrencia detectado en la base de datos.");
+            }
+            catch (DbUpdateException)
+            {
+                throw new DomainException("Error de integridad de datos. Verificá que las referencias enviadas (ej. CategoriaId) existan.");
             }
         }
     }

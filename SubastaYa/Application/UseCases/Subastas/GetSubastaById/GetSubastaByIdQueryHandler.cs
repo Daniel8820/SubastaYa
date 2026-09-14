@@ -19,7 +19,7 @@ namespace SubastaYa.Application.UseCases.Subastas.GetSubastaById
             var subasta = await _subastaRepository.ObtenerDetallePorIdAsync(query.Id);
             if (subasta == null) return null;
 
-            return subasta.ToDetalleDto(); // Usamos nuestro mapper limpio
+            return subasta.ToDetalleDto();
         }
     }
 }

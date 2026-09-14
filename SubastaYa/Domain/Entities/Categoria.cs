@@ -6,7 +6,7 @@
         public string Nombre { get; set; }
         public string UrlIcono { get; set; }
 
-        // Propiedad de navegación: una categoría puede tener muchas subastas
+        // Propiedad de navegación
         public ICollection<Subasta> Subastas { get; set; }
     }
 }

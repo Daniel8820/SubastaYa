@@ -19,16 +19,20 @@ namespace SubastaYa.Application.UseCases.Usuarios.ActualizarPerfil
 
         public async Task HandleAsync(ActualizarPerfilCommand command)
         {
-            // 1. Traemos la entidad pura
+
+            if (string.IsNullOrWhiteSpace(command.NuevoNombre))
+                throw new DomainException("El nombre no puede estar vacío o contener solo espacios.");
+
+            // Traemos la entidad pura
             var usuario = await _usuarioRepository.ObtenerPorIdAsync(command.UsuarioId);
 
             if (usuario == null)
                 throw new DomainException("Usuario no encontrado.");
 
-            // 2. Modificamos los datos de negocio
+            // Modificamos los datos de negocio
             usuario.Nombre = command.NuevoNombre;
 
-            // 3. Persistimos los cambios
+            // Persistimos los cambios
             _usuarioRepository.Actualizar(usuario);
             await _unitOfWork.SaveChangesAsync();
         }

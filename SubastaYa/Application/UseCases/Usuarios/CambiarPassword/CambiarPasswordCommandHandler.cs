@@ -19,13 +19,13 @@ namespace SubastaYa.Application.UseCases.Usuarios.CambiarPassword
 
         public async Task HandleAsync(CambiarPasswordCommand command)
         {
-            // 1. Buscamos nuestro usuario del Dominio usando el ID que viene en el token (UsuarioId)
+            // Buscamos el usuario usando el ID del token (UsuarioId)
             var usuario = await _usuarioRepository.ObtenerPorIdAsync(command.UsuarioId);
 
             if (usuario == null)
                 throw new DomainException("Usuario no encontrado.");
 
-            // 2. Usamos su vínculo (IdentityId) para decirle a Infraestructura que cambie la clave
+            // 2. Usamos (IdentityId) para decirle a Infraestructura que cambie la clave
             await _authService.CambiarPasswordAsync(
                 usuario.IdentityId,
                 command.PasswordActual,

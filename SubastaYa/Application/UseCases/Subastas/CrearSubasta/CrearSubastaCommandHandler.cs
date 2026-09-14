@@ -21,6 +21,9 @@ namespace SubastaYa.Application.UseCases.Subastas.CrearSubasta
             if (command.PrecioBase <= 0 || command.IncrementoMinimo <= 0)
                 throw new DomainException("El precio base y el incremento mínimo deben ser mayores a cero.");
 
+            if (command.PrecioBase > 100000000m)
+                throw new DomainException("El precio base excede el límite máximo permitido por la plataforma.");
+
             // Pasamos ambas fechas a UTC para comparar correctamente
             var fechaInicioUtc = command.FechaInicio.ToUniversalTime();
             var fechaFinUtc = command.FechaFin.ToUniversalTime();

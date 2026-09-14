@@ -23,7 +23,7 @@ namespace SubastaYa.Application.UseCases.Wallet.DepositarFondos
             var billetera = await _billeteraRepository.ObtenerPorUsuarioIdAsync(command.UsuarioId);
             if (billetera == null) throw new DomainException("No se encontró una billetera asociada a este usuario.");
 
-            // Aplicamos la regla de negocio desde la entidad (encapsulamiento)
+            // Regla de negocio desde la Entidad
             billetera.Acreditar(command.Monto);
 
             _billeteraRepository.Actualizar(billetera);
@@ -46,7 +46,7 @@ namespace SubastaYa.Application.UseCases.Wallet.DepositarFondos
                 Fecha = DateTime.UtcNow
             });
 
-            // Impacta todo atómicamente en BD
+            // Guardado atómico
             await _unitOfWork.SaveChangesAsync();
 
             return billetera.SaldoTotal;

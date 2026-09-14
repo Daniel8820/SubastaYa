@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import toast, { Toaster } from 'react-hot-toast';
 import { formatearFechaLocal } from '../utils/formatters';
+import toast from 'react-hot-toast';
 
 const Billetera = () => {
     const [saldo, setSaldo] = useState(null);
@@ -11,7 +11,8 @@ const Billetera = () => {
     const [depositando, setDepositando] = useState(false);
     const navigate = useNavigate();
 
-    const cargarDatosBilletera = async () => {
+    // Usamos un objeto de contexto para pasarlo por referencia y saber si el componente sigue vivo
+    const cargarDatosBilletera = async (context = { isMounted: true }) => {
         const token = localStorage.getItem('token');
         if (!token) {
             navigate('/login');
@@ -19,7 +20,6 @@ const Billetera = () => {
         }
 
         try {
-            // Obtenemos saldo e historial en paralelo
             const [resSaldo, resHistorial] = await Promise.all([
                 fetch('https://localhost:7109/api/wallet/balance', {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -32,20 +32,34 @@ const Billetera = () => {
             if (resSaldo.ok && resHistorial.ok) {
                 const dataSaldo = await resSaldo.json();
                 const dataHistorial = await resHistorial.json();
-                setSaldo(dataSaldo);
-                setHistorial(dataHistorial);
+                
+                // Solo actualizamos la pantalla si el usuario sigue en la Billetera
+                if (context.isMounted) {
+                    setSaldo(dataSaldo);
+                    setHistorial(dataHistorial);
+                }
             } else {
-                toast.error('Error al cargar los datos de la billetera.');
+                if (context.isMounted) toast.error('Error al cargar los datos de la billetera.');
             }
         } catch (error) {
-            toast.error('Error de conexión con el servidor.');
+            if (context.isMounted) toast.error('Error de conexión con el servidor.');
         } finally {
-            setCargando(false);
+            if (context.isMounted) setCargando(false);
         }
     };
 
     useEffect(() => {
-        cargarDatosBilletera();
+        const context = { isMounted: true };
+        
+        // Retrasamos 250ms la carga de datos para evitar que el spinner parpadee si la respuesta es muy rápida
+        const timeoutId = setTimeout(() => {
+            cargarDatosBilletera(context);
+        }, 250);
+
+        return () => {
+            context.isMounted = false; 
+            clearTimeout(timeoutId);   
+        };
     }, [navigate]);
 
     const handleDepositar = async (e) => {
@@ -73,7 +87,7 @@ const Billetera = () => {
             if (response.ok) {
                 toast.success(data.mensaje || 'Depósito simulado con éxito.');
                 setMontoDeposito('');
-                cargarDatosBilletera(); // Refrescamos los paneles y la tabla
+                cargarDatosBilletera();
             } else {
                 toast.error(data.error || data.detail || 'Error al depositar.');
             }
@@ -96,13 +110,17 @@ const Billetera = () => {
         }
     };
 
-    if (cargando) return <div className="text-center mt-5"><h4>Cargando billetera...</h4></div>;
+    if (cargando) return (
+        <div className="text-center mt-5 py-5">
+            <div className="spinner-border text-primary" role="status"></div>
+            <h5 className="mt-3 text-muted">Cargando billetera...</h5>
+        </div>
+    );
     if (!saldo) return null;
 
     return (
         <div className="container mt-4 mb-5">
-            <Toaster position="top-right" />
-            <h2 className="mb-4 text-primary"><i className="bi bi-wallet2 me-2"></i>Mi Billetera</h2>
+            <h2 className="mb-4 text-dark"><i className="bi bi-wallet2 me-2"></i>Mi Billetera</h2>
 
             {/* Panel de Saldos */}
             <div className="row g-4 mb-5">
@@ -136,7 +154,7 @@ const Billetera = () => {
             </div>
 
             <div className="row">
-                {/* Columna Izquierda: Historial */}
+                {/* Columna izquierda - Historial */}
                 <div className="col-lg-8 order-2 order-lg-1">
                     <div className="card shadow-sm">
                         <div className="card-header bg-white py-3">
@@ -183,7 +201,7 @@ const Billetera = () => {
                     </div>
                 </div>
 
-                {/* Columna Derecha: Formulario de Carga */}
+                {/* Columna derecha - Formulario de carga */}
                 <div className="col-lg-4 order-1 order-lg-2 mb-4 mb-lg-0">
                     <div className="card shadow-sm border-primary">
                         <div className="card-body">
@@ -202,6 +220,7 @@ const Billetera = () => {
                                         placeholder="Ej: 5000"
                                         value={montoDeposito}
                                         onChange={(e) => setMontoDeposito(e.target.value)}
+                                        onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
                                         step="0.01"
                                         min="1"
                                         required

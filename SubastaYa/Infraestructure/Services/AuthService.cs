@@ -37,7 +37,7 @@ namespace SubastaYa.Infrastructure.Services
             if (user == null) return false;
             var result = await _userManager.ChangePasswordAsync(user, passwordActual, nuevaPassword);
             if (!result.Succeeded)
-                throw new Exception($"Error al cambiar contraseña: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                throw new DomainException($"Error al cambiar contraseña: {string.Join(", ", result.Errors.Select(e => e.Description))}");
             return true;
         }
 
@@ -58,7 +58,7 @@ namespace SubastaYa.Infrastructure.Services
             {
                 new Claim(JwtRegisteredClaimNames.Sub, usuario.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, usuario.Email ?? ""),
-                new Claim("nombre", usuario.Nombre),
+                new Claim("nombre", string.IsNullOrWhiteSpace(usuario.Nombre) ? "Anónimo" : usuario.Nombre),
                 new Claim(ClaimTypes.Role, "User")
             };
 
