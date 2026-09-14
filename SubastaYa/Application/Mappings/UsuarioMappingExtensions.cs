@@ -14,7 +14,9 @@ namespace SubastaYa.Application.Mappings
                 UrlImagen = subasta.UrlImagen,
                 Estado = subasta.Estado,
                 Recaudacion = subasta.Pujas.Any() ? subasta.Pujas.Max(p => p.Monto) : 0,
-                Adjudicada = subasta.Estado == "FINALIZADA" && subasta.Pujas.Any()
+                Adjudicada = subasta.Estado == "FINALIZADA" && subasta.Pujas.Any(),
+                FechaInicio = subasta.FechaInicio,
+                FechaFin = subasta.FechaFin
             };
         }
 
@@ -29,7 +31,9 @@ namespace SubastaYa.Application.Mappings
                 MiOfertaMaxima = subasta.Pujas.Where(p => p.CompradorId == usuarioId).Max(p => p.Monto),
                 OfertaGanadoraActual = subasta.Pujas.Any() ? subasta.Pujas.Max(p => p.Monto) : subasta.PrecioBase,
                 SoyGanador = subasta.Estado == "FINALIZADA" &&
-                             subasta.Pujas.OrderByDescending(p => p.Monto).FirstOrDefault()?.CompradorId == usuarioId
+                             subasta.Pujas.OrderByDescending(p => p.Monto).FirstOrDefault()?.CompradorId == usuarioId,
+                FechaInicio = subasta.FechaInicio,
+                FechaFin = subasta.FechaFin
             };
         }
     }

@@ -14,6 +14,10 @@
         public string Estado { get; set; }
         public decimal Recaudacion { get; set; }
         public bool Adjudicada { get; set; }
+
+        // Para ver el tiempo de la publicacion 
+        public DateTime FechaInicio { get; set; }
+        public DateTime FechaFin { get; set; }
     }
 
     public class ParticipacionDto
@@ -25,5 +29,9 @@
         public decimal MiOfertaMaxima { get; set; }
         public decimal OfertaGanadoraActual { get; set; }
         public bool SoyGanador { get; set; }
+
+        // Para ver el tiempo de las publicaciones
+        public DateTime FechaInicio { get; set; }
+        public DateTime FechaFin { get; set; }
     }
 }

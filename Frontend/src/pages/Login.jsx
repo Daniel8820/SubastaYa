@@ -27,7 +27,7 @@ const Login = () => {
                 localStorage.setItem('token', data.token);
                 navigate('/catalogo');
             } else {
-                setError(data.error || 'Ocurrió un error al iniciar sesión.');
+                setError(data.detail || data.error || 'Ocurrió un error al iniciar sesión.');
             }
         } catch (err) {
             setError('Error de conexión con el servidor.');

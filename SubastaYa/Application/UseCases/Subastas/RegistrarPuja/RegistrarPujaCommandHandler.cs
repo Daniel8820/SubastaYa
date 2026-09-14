@@ -5,7 +5,7 @@ using SubastaYa.Domain.Exceptions;
 
 namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
 {
-    public class RegistrarPujaCommandHandler : ICommandHandler<RegistrarPujaCommand, bool>
+    public class RegistrarPujaCommandHandler : ICommandHandler<RegistrarPujaCommand>
     {
         private readonly ISubastaRepository _subastaRepository;
         private readonly IBilleteraRepository _billeteraRepository;
@@ -23,8 +23,7 @@ namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
             _unitOfWork = unitOfWork;
             _notificador = notificador;
         }
-
-        public async Task<bool> HandleAsync(RegistrarPujaCommand command)
+        public async Task HandleAsync(RegistrarPujaCommand command)
         {
             var subasta = await _subastaRepository.ObtenerPorIdAsync(command.SubastaId);
             if (subasta == null) throw new DomainException("La subasta no existe.");
@@ -43,10 +42,8 @@ namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
                 FechaPuja = DateTime.UtcNow
             };
 
-            // Delegación de lógica al Dominio
             bool tiempoExtendido = subasta.ProcesarPuja(nuevaPuja);
 
-            // Compensaciones financieras
             billeteraComprador.RetenerFondos(command.Monto);
             _billeteraRepository.Actualizar(billeteraComprador);
 
@@ -75,22 +72,13 @@ namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
 
             _subastaRepository.Actualizar(subasta);
 
-            try
-            {
-                await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync();
 
-                await _notificador.NotificarNuevaPujaAsync(
-                    command.SubastaId,
-                    command.Monto,
-                    command.CompradorNombre,
-                    command.CompradorId);
-
-                return true;
-            }
-            catch (ConcurrencyDomainException)
-            {
-                return false;
-            }
+            await _notificador.NotificarNuevaPujaAsync(
+                command.SubastaId,
+                command.Monto,
+                command.CompradorNombre,
+                command.CompradorId);
         }
     }
 }
