@@ -42,6 +42,13 @@ namespace SubastaYa.Api.Middlewares
             // Evaluación del tipo de excepción para asignar el Status Code correcto (REST Nivel 2)
             switch (exception)
             {
+                // Error de Concurrencia Optimista -> 409 Conflict
+                case ConcurrencyDomainException concurrencyEx:
+                    statusCode = (int)HttpStatusCode.Conflict;
+                    title = "Conflicto de estado";
+                    detail = "Rechazo por concurrencia. Otro usuario acaba de pujar, por favor actualizá la subasta e intentá nuevamente.";
+                    break;
+
                 // Errores de negocio (Ej: Saldo insuficiente, mail duplicado) -> 400 Bad Request
                 case DomainException domainEx:
                     statusCode = (int)HttpStatusCode.BadRequest; 
@@ -63,9 +70,13 @@ namespace SubastaYa.Api.Middlewares
 
                 // Errores de permisos -> 401 Unauthorized o 403 Forbidden
                 case UnauthorizedAccessException:
-                    statusCode = (int)HttpStatusCode.Forbidden;
+                    statusCode = (int)HttpStatusCode.Unauthorized;
                     title = "Acceso denegado";
-                    detail = "No tenés los permisos necesarios para realizar esta acción.";
+                    // Utilizamos el mensaje personalizado ("Correo o contraseña incorrectos"), 
+                    // y solo usamos el genérico si salta el error por defecto de .NET
+                    detail = exception.Message.Contains("Attempted to perform")
+                        ? "No tenés los permisos necesarios para realizar esta acción."
+                        : exception.Message;
                     break;
 
                 // Cualquier otro error inesperado -> 500 Internal Server Error

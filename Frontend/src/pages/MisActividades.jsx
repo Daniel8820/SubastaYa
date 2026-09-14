@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import ImagenTarjeta from '../components/ImagenTarjeta';
+import ContadorRegresivo from '../components/ContadorRegresivo';
 
 const MisActividades = () => {
     const navigate = useNavigate();
@@ -142,11 +143,18 @@ const MisActividades = () => {
                                         </p>
                                         {pub.adjudicada && <span className="badge bg-success mt-2"><i className="bi bi-check-circle"></i> ¡Venta realizada!</span>}
                                     </div>
-                                    <div className="card-footer bg-white border-top-0">
+                                    <div className="card-footer bg-white border-top-0 pb-3">
+                                        <div className="mb-3">
+                                            <ContadorRegresivo 
+                                                fechaInicio={pub.fechaInicio} 
+                                                fechaFin={pub.fechaFin} 
+                                                estado={pub.estado} 
+                                            />
+                                        </div>
                                         <Link 
                                             to={`/subasta/${pub.id}`} 
                                             state={{ origen: '/mis-actividades', tab: 'publicaciones' }} 
-                                            className="btn btn-outline-primary w-100"
+                                            className="btn btn-outline-primary w-100 fw-bold"
                                         >
                                             Ver Detalle
                                         </Link>
@@ -167,44 +175,75 @@ const MisActividades = () => {
                             </div>
                         </div>
                     ) : (
-                        pujasFiltradas.map((part) => (
-                            <div key={part.id} className="col-md-6 col-lg-4">
-                                <div className={`card h-100 shadow-sm border-0 hover-animado ${part.soyGanador ? 'border-warning' : ''}`}>
-                                    {part.urlImagen && (
-                                        <img 
+                        pujasFiltradas.map((part) => {
+                           
+                            const esActiva = part.estado === 'ACTIVA';
+                            const soyLider = esActiva && part.miOfertaMaxima >= part.ofertaGanadoraActual;
+                            const fuiSuperado = esActiva && part.miOfertaMaxima < part.ofertaGanadoraActual;
+
+                            return (
+                                <div key={part.id} className="col-md-6 col-lg-4">
+                                    {/* Borde dinámico: Amarillo si ganó, neutral para el resto */}
+                                    <div className={`card h-100 shadow-sm hover-animado ${part.soyGanador ? 'border-warning border-2' : 'border-0'}`}>
+                                        <ImagenTarjeta 
                                             src={part.urlImagen} 
-                                            className="card-img-top border-bottom" 
                                             alt={part.titulo} 
-                                            style={{ height: '160px', objectFit: 'cover' }} 
+                                            height="160px" 
                                         />
-                                    )}
-                                    <div className="card-body">
-                                        <h5 className="card-title text-primary">{part.titulo}</h5>
-                                        <span className={`badge mb-3 ${part.estado === 'ACTIVA' ? 'bg-success' : 'bg-secondary'}`}>
-                                            {part.estado}
-                                        </span>
-                                        <div className="mb-2">
-                                            <small className="text-muted d-block">Mi oferta máxima:</small>
-                                            <span className="fs-5">${part.miOfertaMaxima}</span>
+                                        <div className="card-body">
+                                            <h5 className="card-title text-primary mb-2">{part.titulo}</h5>
+                                            
+                                            {/* Fila de Badges de Estado y Liderazgo */}
+                                            <div className="d-flex flex-wrap gap-2 mb-3">
+                                                <span className={`badge ${esActiva ? 'bg-success' : 'bg-secondary'}`}>
+                                                    {part.estado}
+                                                </span>
+                                                {soyLider && (
+                                                    <span className="badge bg-primary shadow-sm"><i className="bi bi-star-fill me-1"></i>Vas ganando</span>
+                                                )}
+                                                {fuiSuperado && (
+                                                    <span className="badge bg-danger shadow-sm"><i className="bi bi-exclamation-triangle-fill me-1"></i>Superado</span>
+                                                )}
+                                            </div>
+
+                                            <div className="mb-2">
+                                                <small className="text-muted d-block">Mi oferta máxima:</small>
+                                                <span className={`fs-5 fw-bold ${fuiSuperado ? 'text-danger' : 'text-dark'}`}>
+                                                    ${part.miOfertaMaxima}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <small className="text-muted d-block">Oferta ganadora actual:</small>
+                                                <span className="fs-5 fw-bold text-success">${part.ofertaGanadoraActual}</span>
+                                            </div>
+                                            
+                                            {part.soyGanador && (
+                                                <div className="mt-3">
+                                                    <span className="badge bg-warning text-dark"><i className="bi bi-trophy-fill me-1"></i>¡Ganaste esta subasta!</span>
+                                                </div>
+                                            )}
                                         </div>
-                                        <div>
-                                            <small className="text-muted d-block">Oferta ganadora actual:</small>
-                                            <span className="fs-5">${part.ofertaGanadoraActual}</span>
+                                        <div className="card-footer bg-white border-top-0 pb-3">
+                                            <div className="mb-3">
+                                                <ContadorRegresivo 
+                                                    fechaInicio={part.fechaInicio} 
+                                                    fechaFin={part.fechaFin} 
+                                                    estado={part.estado} 
+                                                />
+                                            </div>
+                                            <Link 
+                                                to={`/subasta/${part.id}`} 
+                                                state={{ origen: '/mis-actividades', tab: 'pujas' }} 
+                                                // El botón se vuelve rojo si te pasaron
+                                                className={`btn w-100 fw-bold ${fuiSuperado ? 'btn-danger' : 'btn-outline-primary'}`}
+                                            >
+                                                {fuiSuperado ? '¡Mejorar oferta!' : 'Ver Detalle'}
+                                            </Link>
                                         </div>
-                                        {part.soyGanador && <span className="badge bg-warning text-dark mt-3"><i className="bi bi-trophy"></i> ¡Ganaste esta subasta!</span>}
-                                    </div>
-                                    <div className="card-footer bg-white border-top-0">
-                                        <Link 
-                                            to={`/subasta/${part.id}`} 
-                                            state={{ origen: '/mis-actividades', tab: 'pujas' }} 
-                                            className="btn btn-outline-primary w-100"
-                                        >
-                                            Ver Detalle
-                                        </Link>
                                     </div>
                                 </div>
-                            </div>
-                        ))
+                            );
+                        })
                     )
                 )}
             </div>

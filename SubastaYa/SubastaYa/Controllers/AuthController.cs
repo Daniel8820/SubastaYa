@@ -13,15 +13,8 @@ namespace SubastaYa.Api.Controllers
             [FromBody] LoginCommand command,
             [FromServices] LoginCommandHandler handler)
         {
-            try
-            {
-                var response = await handler.HandleAsync(command);
-                return Ok(response);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Unauthorized(new { error = "Correo o contraseña incorrectos." });
-            }
+            var response = await handler.HandleAsync(command);
+            return Ok(response);
         }
 
         [HttpPost("register")]

@@ -1,6 +1,9 @@
 # Variables de entorno / secretos
 .env
 
+# Archivos de configuración local de .NET
+**/appsettings.*.json
+
 # Visual Studio
 .vs/
 *.user

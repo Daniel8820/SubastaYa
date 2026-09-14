@@ -34,11 +34,10 @@ namespace SubastaYa.Api.Controllers
             command.CompradorNombre = _currentUser.Nombre;
             command.SubastaId = id;
 
-            bool resultado = await handler.HandleAsync(command);
+            // Delegamos la acción completamente al Handler
+            await handler.HandleAsync(command);
 
-            if (!resultado)
-                return Conflict(new { error = "Rechazo por concurrencia. Otro usuario acaba de pujar, por favor actualizá la subasta e intentá nuevamente." });
-
+            // Si llegamos hasta acá, no hubo excepciones de concurrencia ni de dominio
             return Ok(new { mensaje = "Puja registrada exitosamente. Saldo retenido temporalmente." });
         }
 
