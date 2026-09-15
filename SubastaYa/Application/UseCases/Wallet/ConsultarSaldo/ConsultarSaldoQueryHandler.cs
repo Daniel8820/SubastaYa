@@ -15,9 +15,9 @@ namespace SubastaYa.Application.UseCases.Wallet.ConsultarSaldo
             _billeteraRepository = billeteraRepository;
         }
 
-        public async Task<SaldoResponseDto> HandleAsync(ConsultarSaldoQuery query)
+        public async Task<SaldoResponseDto> HandleAsync(ConsultarSaldoQuery query, CancellationToken ct = default)
         {
-            var billetera = await _billeteraRepository.ObtenerPorUsuarioIdAsync(query.UsuarioId);
+            var billetera = await _billeteraRepository.ObtenerPorUsuarioIdAsync(query.UsuarioId, ct);
             if (billetera == null) throw new DomainException("No se encontró una billetera asociada a este usuario.");
 
             return billetera.ToSaldoDto();

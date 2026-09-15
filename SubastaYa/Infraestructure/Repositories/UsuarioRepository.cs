@@ -14,19 +14,19 @@ namespace SubastaYa.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task AgregarAsync(Usuario usuario)
+        public async Task AgregarAsync(Usuario usuario, CancellationToken ct = default)
         {
-            await _context.Usuarios.AddAsync(usuario);
+            await _context.Usuarios.AddAsync(usuario, ct);
         }
 
-        public async Task<Usuario?> ObtenerPorIdAsync(int id)
+        public async Task<Usuario?> ObtenerPorIdAsync(int id, CancellationToken ct = default)
         {
-            return await _context.Usuarios.FindAsync(id);
+            return await _context.Usuarios.FindAsync(new object[] { id }, ct);
         }
 
-        public async Task<Usuario?> ObtenerPorIdentityIdAsync(string identityId)
+        public async Task<Usuario?> ObtenerPorIdentityIdAsync(string identityId, CancellationToken ct = default)
         {
-            return await _context.Usuarios.FirstOrDefaultAsync(u => u.IdentityId == identityId);
+            return await _context.Usuarios.FirstOrDefaultAsync(u => u.IdentityId == identityId, ct);
         }
         public void Actualizar(Usuario usuario)
         {

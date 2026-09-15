@@ -25,7 +25,8 @@ namespace SubastaYa.Api.Controllers
         public async Task<IActionResult> RegistrarPuja(
             int id,
             [FromBody] RegistrarPujaCommand command,
-            [FromServices] RegistrarPujaCommandHandler handler)
+            [FromServices] RegistrarPujaCommandHandler handler,
+            CancellationToken ct = default)
         {
             if (_currentUser.UsuarioId == 0)
                 return Unauthorized(new { error = "Token inválido o sin permisos." });
@@ -35,7 +36,7 @@ namespace SubastaYa.Api.Controllers
             command.SubastaId = id;
 
             // Delegamos la acción completamente al Handler
-            await handler.HandleAsync(command);
+            await handler.HandleAsync(command, ct);
 
             // Si llegamos hasta acá, no hubo excepciones de concurrencia ni de dominio
             return Ok(new { mensaje = "Puja registrada exitosamente. Saldo retenido temporalmente." });
@@ -45,13 +46,14 @@ namespace SubastaYa.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> CrearSubasta(
             [FromBody] CrearSubastaCommand command,
-            [FromServices] CrearSubastaCommandHandler handler)
+            [FromServices] CrearSubastaCommandHandler handler,
+            CancellationToken ct = default)
         {
             if (_currentUser.UsuarioId == 0)
                 return Unauthorized(new { error = "Token inválido o sin permisos." });
 
             command.VendedorId = _currentUser.UsuarioId;
-            int subastaId = await handler.HandleAsync(command);
+            int subastaId = await handler.HandleAsync(command, ct);
 
             return CreatedAtAction(
                 nameof(ObtenerDetalleSubasta),
@@ -63,10 +65,11 @@ namespace SubastaYa.Api.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> ObtenerDetalleSubasta(
             int id,
-            [FromServices] GetSubastaByIdQueryHandler handler)
+            [FromServices] GetSubastaByIdQueryHandler handler,
+            CancellationToken ct = default)
         {
             var query = new GetSubastaByIdQuery { Id = id };
-            var response = await handler.HandleAsync(query);
+            var response = await handler.HandleAsync(query, ct);
 
             if (response == null)
                 return NotFound(new { error = "La subasta solicitada no existe." });
@@ -83,7 +86,8 @@ namespace SubastaYa.Api.Controllers
             [FromQuery] decimal? precioMax = null,
             [FromQuery] string orden = "tiempo_restante",
             [FromQuery] int pagina = 1,
-            [FromQuery] int tamañoPagina = 10)
+            [FromQuery] int tamañoPagina = 10,
+            CancellationToken ct = default)
         {
             var query = new GetCatalogoSubastasQuery
             {
@@ -96,14 +100,15 @@ namespace SubastaYa.Api.Controllers
                 TamañoPagina = tamañoPagina
             };
 
-            var response = await handler.HandleAsync(query);
+            var response = await handler.HandleAsync(query, ct);
             return Ok(response);
         }
 
         [Authorize]
         [HttpPatch("{id}/cancel")]
         public async Task<IActionResult> CancelarSubasta(int id,
-            [FromServices] CancelarSubastaCommandHandler handler)
+            [FromServices] CancelarSubastaCommandHandler handler,
+            CancellationToken ct = default)
         {
             if (_currentUser.UsuarioId == 0)
                 return Unauthorized(new { error = "Token inválido o sin permisos." });
@@ -114,7 +119,7 @@ namespace SubastaYa.Api.Controllers
                 VendedorId = _currentUser.UsuarioId
             };
 
-            await handler.HandleAsync(command);
+            await handler.HandleAsync(command, ct);
 
             return Ok(new { mensaje = "La subasta fue cancelada exitosamente." });
         }

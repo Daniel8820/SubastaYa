@@ -14,9 +14,9 @@ namespace SubastaYa.Application.UseCases.Subastas.GetSubastaById
             _subastaRepository = subastaRepository;
         }
 
-        public async Task<SubastaDetalleResponseDto?> HandleAsync(GetSubastaByIdQuery query)
+        public async Task<SubastaDetalleResponseDto?> HandleAsync(GetSubastaByIdQuery query, CancellationToken ct = default)
         {
-            var subasta = await _subastaRepository.ObtenerDetallePorIdAsync(query.Id);
+            var subasta = await _subastaRepository.ObtenerDetallePorIdAsync(query.Id, ct);
             if (subasta == null) return null;
 
             return subasta.ToDetalleDto();

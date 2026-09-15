@@ -11,8 +11,8 @@ const Billetera = () => {
     const [depositando, setDepositando] = useState(false);
     const navigate = useNavigate();
 
-    // Usamos un objeto de contexto para pasarlo por referencia y saber si el componente sigue vivo
-    const cargarDatosBilletera = async (context = { isMounted: true }) => {
+    // Recibimos la señal opcional como parámetro
+    const cargarDatosBilletera = async (context = { isMounted: true }, signal = undefined) => {
         const token = localStorage.getItem('token');
         if (!token) {
             navigate('/login');
@@ -22,10 +22,12 @@ const Billetera = () => {
         try {
             const [resSaldo, resHistorial] = await Promise.all([
                 fetch('https://localhost:7109/api/wallet/balance', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    signal // Inyectamos la señal
                 }),
                 fetch('https://localhost:7109/api/wallet/history', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    signal // Inyectamos la señal
                 })
             ]);
 
@@ -33,7 +35,6 @@ const Billetera = () => {
                 const dataSaldo = await resSaldo.json();
                 const dataHistorial = await resHistorial.json();
                 
-                // Solo actualizamos la pantalla si el usuario sigue en la Billetera
                 if (context.isMounted) {
                     setSaldo(dataSaldo);
                     setHistorial(dataHistorial);
@@ -42,6 +43,7 @@ const Billetera = () => {
                 if (context.isMounted) toast.error('Error al cargar los datos de la billetera.');
             }
         } catch (error) {
+            if (error.name === 'AbortError') return; // Filtramos la cancelación de red
             if (context.isMounted) toast.error('Error de conexión con el servidor.');
         } finally {
             if (context.isMounted) setCargando(false);
@@ -50,15 +52,16 @@ const Billetera = () => {
 
     useEffect(() => {
         const context = { isMounted: true };
+        const controller = new AbortController(); // Controlador
         
-        // Retrasamos 250ms la carga de datos para evitar que el spinner parpadee si la respuesta es muy rápida
         const timeoutId = setTimeout(() => {
-            cargarDatosBilletera(context);
+            cargarDatosBilletera(context, controller.signal); // Pasamos la señal
         }, 250);
 
         return () => {
             context.isMounted = false; 
-            clearTimeout(timeoutId);   
+            clearTimeout(timeoutId);
+            controller.abort(); // Abortamos   
         };
     }, [navigate]);
 
@@ -215,8 +218,11 @@ const Billetera = () => {
                                 <div className="input-group mb-3">
                                     <span className="input-group-text">$</span>
                                     <input 
-                                        type="number" 
-                                        className="form-control form-control-lg fw-bold" 
+                                        type="number"
+                                        id="montoDeposito"
+                                        name="montoDeposito"      
+                                        autoComplete="off"        
+                                        className="form-control form-control-lg fw-bold"
                                         placeholder="Ej: 5000"
                                         value={montoDeposito}
                                         onChange={(e) => setMontoDeposito(e.target.value)}

@@ -15,12 +15,12 @@ namespace SubastaYa.Application.UseCases.Wallet.ObtenerHistorial
             _billeteraRepository = billeteraRepository;
         }
 
-        public async Task<List<TransaccionDto>> HandleAsync(ObtenerHistorialQuery query)
+        public async Task<List<TransaccionDto>> HandleAsync(ObtenerHistorialQuery query, CancellationToken ct = default)
         {
-            var billetera = await _billeteraRepository.ObtenerPorUsuarioIdAsync(query.UsuarioId);
+            var billetera = await _billeteraRepository.ObtenerPorUsuarioIdAsync(query.UsuarioId, ct);
             if (billetera == null) throw new DomainException("Billetera no encontrada.");
 
-            var historial = await _billeteraRepository.ObtenerHistorialAsync(billetera.Id);
+            var historial = await _billeteraRepository.ObtenerHistorialAsync(billetera.Id, ct);
 
             return historial.Select(t => t.ToDto()).ToList();
         }

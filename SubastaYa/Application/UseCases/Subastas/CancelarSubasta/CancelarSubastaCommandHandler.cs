@@ -16,9 +16,9 @@ namespace SubastaYa.Application.UseCases.Subastas.CancelarSubasta
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<bool> HandleAsync(CancelarSubastaCommand command)
+        public async Task<bool> HandleAsync(CancelarSubastaCommand command, CancellationToken ct = default)
         {
-            var subasta = await _subastaRepository.ObtenerPorIdAsync(command.SubastaId);
+            var subasta = await _subastaRepository.ObtenerPorIdAsync(command.SubastaId, ct);
 
             if (subasta == null)
                 throw new DomainException("La subasta no existe.");
@@ -52,7 +52,7 @@ namespace SubastaYa.Application.UseCases.Subastas.CancelarSubasta
             });
 
             // Guardado atómico
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(ct);
 
             return true;
         }
