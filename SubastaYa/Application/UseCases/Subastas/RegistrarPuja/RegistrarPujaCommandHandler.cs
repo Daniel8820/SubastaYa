@@ -23,12 +23,12 @@ namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
             _unitOfWork = unitOfWork;
             _notificador = notificador;
         }
-        public async Task HandleAsync(RegistrarPujaCommand command)
+        public async Task HandleAsync(RegistrarPujaCommand command, CancellationToken ct = default)
         {
-            var subasta = await _subastaRepository.ObtenerPorIdAsync(command.SubastaId);
+            var subasta = await _subastaRepository.ObtenerPorIdAsync(command.SubastaId, ct);
             if (subasta == null) throw new DomainException("La subasta no existe.");
 
-            var billeteraComprador = await _billeteraRepository.ObtenerPorUsuarioIdAsync(command.CompradorId);
+            var billeteraComprador = await _billeteraRepository.ObtenerPorUsuarioIdAsync(command.CompradorId, ct);
             if (billeteraComprador == null) throw new DomainException("El comprador no tiene una billetera asociada.");
 
             var pujaGanadoraAnterior = subasta.Pujas.OrderByDescending(p => p.Monto).FirstOrDefault();
@@ -49,7 +49,7 @@ namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
 
             if (pujaGanadoraAnterior != null)
             {
-                var billeteraAnterior = await _billeteraRepository.ObtenerPorUsuarioIdAsync(pujaGanadoraAnterior.CompradorId);
+                var billeteraAnterior = await _billeteraRepository.ObtenerPorUsuarioIdAsync(pujaGanadoraAnterior.CompradorId, ct);
                 if (billeteraAnterior != null)
                 {
                     billeteraAnterior.LiberarGarantia(pujaGanadoraAnterior.Monto);
@@ -72,13 +72,14 @@ namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
 
             _subastaRepository.Actualizar(subasta);
 
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(ct);
 
             await _notificador.NotificarNuevaPujaAsync(
                 command.SubastaId,
                 command.Monto,
                 command.CompradorNombre,
-                command.CompradorId);
+                command.CompradorId,
+                ct);
         }
     }
 }

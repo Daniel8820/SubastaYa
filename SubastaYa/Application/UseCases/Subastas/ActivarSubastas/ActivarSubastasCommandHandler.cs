@@ -15,9 +15,9 @@ namespace SubastaYa.Application.UseCases.Subastas.ActivarSubastas
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<int> HandleAsync(ActivarSubastasCommand command)
+        public async Task<int> HandleAsync(ActivarSubastasCommand command, CancellationToken ct = default)
         {
-            var subastasParaActivar = await _subastaRepository.ObtenerProgramadasParaActivarAsync(DateTime.UtcNow);
+            var subastasParaActivar = await _subastaRepository.ObtenerProgramadasParaActivarAsync(DateTime.UtcNow, ct);
 
             if (!subastasParaActivar.Any()) return 0;
 
@@ -37,7 +37,7 @@ namespace SubastaYa.Application.UseCases.Subastas.ActivarSubastas
                 });
             }
 
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(ct);
             return subastasParaActivar.Count;
         }
     }

@@ -20,10 +20,10 @@ namespace SubastaYa.Application.UseCases.Subastas.FinalizarSubastas
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<int> HandleAsync(FinalizarSubastasCommand command)
+        public async Task<int> HandleAsync(FinalizarSubastasCommand command, CancellationToken ct = default)
         {
             
-            var subastasVencidas = await _subastaRepository.ObtenerVencidasAsync(DateTime.UtcNow);
+            var subastasVencidas = await _subastaRepository.ObtenerVencidasAsync(DateTime.UtcNow, ct);
 
             if (!subastasVencidas.Any()) return 0;
 
@@ -35,7 +35,7 @@ namespace SubastaYa.Application.UseCases.Subastas.FinalizarSubastas
 
                 if (pujaGanadora != null)
                 {
-                    var billeteraVendedor = await _billeteraRepository.ObtenerPorUsuarioIdAsync(subasta.VendedorId);
+                    var billeteraVendedor = await _billeteraRepository.ObtenerPorUsuarioIdAsync(subasta.VendedorId, ct);
                     if (billeteraVendedor != null)
                     {
                         billeteraVendedor.Acreditar(pujaGanadora.Monto);
@@ -51,7 +51,7 @@ namespace SubastaYa.Application.UseCases.Subastas.FinalizarSubastas
                         });
                     }
 
-                    var billeteraComprador = await _billeteraRepository.ObtenerPorUsuarioIdAsync(pujaGanadora.CompradorId);
+                    var billeteraComprador = await _billeteraRepository.ObtenerPorUsuarioIdAsync(pujaGanadora.CompradorId, ct);
                     if (billeteraComprador != null)
                     {  
                         billeteraComprador.DescontarPago(pujaGanadora.Monto);
@@ -87,7 +87,7 @@ namespace SubastaYa.Application.UseCases.Subastas.FinalizarSubastas
                 });
             }
 
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(ct);
             return subastasVencidas.Count;
         }
     }

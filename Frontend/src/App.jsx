@@ -16,7 +16,7 @@ function App() {
       <Navbar /> 
       
       <Toaster 
-          position="right" 
+          position="bottom-right" 
           reverseOrder={false} 
           toastOptions={{
               style: {

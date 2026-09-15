@@ -19,12 +19,12 @@ namespace SubastaYa.Application.UseCases.Usuarios.RegistrarUsuario
             _usuarioRepository = usuarioRepository;
             _unitOfWork = unitOfWork;
         }
-        public async Task<int> HandleAsync(RegistrarUsuarioCommand command)
+        public async Task<int> HandleAsync(RegistrarUsuarioCommand command, CancellationToken ct = default)
         {
-            // 1. Delegamos a la infraestructura la creación de la clave y el token
+            // Delegamos a la infraestructura la creación de la clave y el token
             string nuevoIdentityId = await _authService.RegistrarLoginAsync(command.Email, command.Password);
 
-            // 2. Creamos la entidad en el Dominio
+            // Creamos la entidad en el Dominio
             var nuevoUsuario = new Usuario
             {
                 Nombre = command.Nombre,
@@ -37,9 +37,9 @@ namespace SubastaYa.Application.UseCases.Usuarios.RegistrarUsuario
                 }
             };
 
-            // 3. Guardamos en la tabla del negocio
-            await _usuarioRepository.AgregarAsync(nuevoUsuario);
-            await _unitOfWork.SaveChangesAsync();
+            // Guardamos en la tabla del negocio
+            await _usuarioRepository.AgregarAsync(nuevoUsuario, ct);
+            await _unitOfWork.SaveChangesAsync(ct);
 
             return nuevoUsuario.Id;
         }

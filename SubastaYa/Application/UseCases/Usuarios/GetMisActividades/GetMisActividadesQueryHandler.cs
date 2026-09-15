@@ -14,10 +14,10 @@ namespace SubastaYa.Application.UseCases.Usuarios.GetMisActividades
             _subastaRepository = subastaRepository;
         }
 
-        public async Task<MisActividadesResponseDto> HandleAsync(GetMisActividadesQuery query)
+        public async Task<MisActividadesResponseDto> HandleAsync(GetMisActividadesQuery query, CancellationToken ct = default)
         {
-            var publicaciones = await _subastaRepository.ObtenerPorVendedorIdAsync(query.UsuarioId);
-            var pujas = await _subastaRepository.ObtenerPorCompradorIdAsync(query.UsuarioId);
+            var publicaciones = await _subastaRepository.ObtenerPorVendedorIdAsync(query.UsuarioId, ct);
+            var pujas = await _subastaRepository.ObtenerPorCompradorIdAsync(query.UsuarioId, ct);
 
             var response = new MisActividadesResponseDto();
 

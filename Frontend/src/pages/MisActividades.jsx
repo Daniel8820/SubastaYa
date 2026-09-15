@@ -16,6 +16,7 @@ const MisActividades = () => {
 
     useEffect(() => {
         const context = { isMounted: true };
+        const controller = new AbortController(); // Controlador
 
         const timeoutId = setTimeout(() => {
             const obtenerActividades = async () => {
@@ -29,7 +30,8 @@ const MisActividades = () => {
                     const response = await fetch('https://localhost:7109/api/v1/users/me/activities', {
                         headers: {
                             'Authorization': `Bearer ${token}`
-                        }
+                        },
+                        signal: controller.signal // Señal
                     });
 
                     if (response.ok) {
@@ -39,6 +41,7 @@ const MisActividades = () => {
                         if (context.isMounted) setError('Error al cargar las actividades.');
                     }
                 } catch (err) {
+                    if (err.name === 'AbortError') return; // Filtro de aborto
                     if (context.isMounted) setError('Error de conexión con el servidor.');
                 } finally {
                     if (context.isMounted) setCargando(false);
@@ -51,6 +54,7 @@ const MisActividades = () => {
         return () => {
             context.isMounted = false;
             clearTimeout(timeoutId);
+            controller.abort(); // 4. Abortar
         };
     }, [navigate]);
 

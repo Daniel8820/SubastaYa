@@ -3,8 +3,8 @@ body {
   background-image: url('./assets/fondo.png');
   background-size: cover; /* Para que cubra toda la pantalla */
   background-position: center; /* Para que esté siempre centrada */
-  background-attachment: fixed; /* Para que no se mueva al hacer scroll */
   background-repeat: no-repeat;
+  background-attachment: fixed;
   
   font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   color: #333;

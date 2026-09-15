@@ -30,9 +30,12 @@ const Detalle = () => {
         return `${nombre.substring(0, 2)}***${nombre.substring(nombre.length - 2)}`;
     };
 
-    const obtenerDetalle = async () => {
+    const obtenerDetalle = async (signal = undefined) => {
         try {
-            const response = await fetch(`https://localhost:7109/api/v1/auctions/${id}`);
+            const response = await fetch(`https://localhost:7109/api/v1/auctions/${id}`, {
+                signal // Inyectamos la señal
+            });
+            
             if (response.ok) {
                 const data = await response.json();
                 setSubasta(data);
@@ -46,6 +49,7 @@ const Detalle = () => {
                 setError('Error al cargar los datos.');
             }
         } catch (err) {
+            if (err.name === 'AbortError') return; // Filtramos la cancelación
             setError('Error de conexión.');
         } finally {
             setCargando(false);
@@ -53,6 +57,8 @@ const Detalle = () => {
     };
 
     useEffect(() => {
+        const controller = new AbortController(); // Controlador
+
         const token = localStorage.getItem('token');
         if (token) {
             try {
@@ -62,7 +68,10 @@ const Detalle = () => {
                 console.error("Token inválido");
             }
         }
-        obtenerDetalle();
+        
+        obtenerDetalle(controller.signal); // Pasamos la señal
+        
+        return () => controller.abort(); // Abortamos
     }, [id]);
 
     useEffect(() => {

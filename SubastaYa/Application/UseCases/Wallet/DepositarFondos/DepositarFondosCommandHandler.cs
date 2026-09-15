@@ -16,11 +16,11 @@ namespace SubastaYa.Application.UseCases.Wallet.DepositarFondos
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<decimal> HandleAsync(DepositarFondosCommand command)
+        public async Task<decimal> HandleAsync(DepositarFondosCommand command, CancellationToken ct = default)
         {
             if (command.Monto <= 0) throw new DomainException("El monto a depositar debe ser mayor a cero.");
 
-            var billetera = await _billeteraRepository.ObtenerPorUsuarioIdAsync(command.UsuarioId);
+            var billetera = await _billeteraRepository.ObtenerPorUsuarioIdAsync(command.UsuarioId, ct);
             if (billetera == null) throw new DomainException("No se encontró una billetera asociada a este usuario.");
 
             // Regla de negocio desde la Entidad
@@ -47,7 +47,7 @@ namespace SubastaYa.Application.UseCases.Wallet.DepositarFondos
             });
 
             // Guardado atómico
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(ct);
 
             return billetera.SaldoTotal;
         }

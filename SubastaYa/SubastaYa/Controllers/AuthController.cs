@@ -11,18 +11,20 @@ namespace SubastaYa.Api.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(
             [FromBody] LoginCommand command,
-            [FromServices] LoginCommandHandler handler)
+            [FromServices] LoginCommandHandler handler,
+            CancellationToken ct = default)
         {
-            var response = await handler.HandleAsync(command);
+            var response = await handler.HandleAsync(command, ct);
             return Ok(response);
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> RegistrarUsuario(
             [FromBody] RegistrarUsuarioCommand command,
-            [FromServices] RegistrarUsuarioCommandHandler handler)
+            [FromServices] RegistrarUsuarioCommandHandler handler,
+            CancellationToken ct = default)
         {
-            int nuevoUsuarioId = await handler.HandleAsync(command);
+            int nuevoUsuarioId = await handler.HandleAsync(command, ct);
 
             return Created(string.Empty, new
             {

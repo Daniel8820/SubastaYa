@@ -32,10 +32,10 @@ namespace SubastaYa.Infrastructure.Workers
                     var finalizarHandler = scope.ServiceProvider.GetRequiredService<FinalizarSubastasCommandHandler>();
 
                     // Ejecutamos el caso de uso de activación
-                    await activarHandler.HandleAsync(new ActivarSubastasCommand());
+                    await activarHandler.HandleAsync(new ActivarSubastasCommand(), stoppingToken);
 
                     // Ejecutamos el caso de uso de cierre
-                    await finalizarHandler.HandleAsync(new FinalizarSubastasCommand());
+                    await finalizarHandler.HandleAsync(new FinalizarSubastasCommand(), stoppingToken);
                 }
                 catch (Exception ex)
                 {

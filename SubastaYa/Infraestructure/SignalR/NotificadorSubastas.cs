@@ -13,7 +13,7 @@ namespace SubastaYa.Infrastructure.SignalR
         }
 
         // Le sumamos el parámetro "int compradorId" al final
-        public async Task NotificarNuevaPujaAsync(int subastaId, decimal nuevoMonto, string compradorNombre, int compradorId)
+        public async Task NotificarNuevaPujaAsync(int subastaId, decimal nuevoMonto, string compradorNombre, int compradorId, CancellationToken ct = default)
         {
             string nombreSala = $"subasta_{subastaId}";
 
@@ -23,7 +23,7 @@ namespace SubastaYa.Infrastructure.SignalR
                 Comprador = compradorNombre,
                 CompradorId = compradorId,
                 Fecha = DateTime.UtcNow
-            });
+            }, ct);
         }
     }
 }

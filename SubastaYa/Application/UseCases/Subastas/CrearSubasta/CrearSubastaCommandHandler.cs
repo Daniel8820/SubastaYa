@@ -16,7 +16,7 @@ namespace SubastaYa.Application.UseCases.Subastas.CrearSubasta
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<int> HandleAsync(CrearSubastaCommand command)
+        public async Task<int> HandleAsync(CrearSubastaCommand command, CancellationToken ct = default)
         {
             if (command.PrecioBase <= 0 || command.IncrementoMinimo <= 0)
                 throw new DomainException("El precio base y el incremento mínimo deben ser mayores a cero.");
@@ -53,8 +53,8 @@ namespace SubastaYa.Application.UseCases.Subastas.CrearSubasta
                 Version = 1
             };
 
-            await _subastaRepository.AgregarAsync(nuevaSubasta);
-            await _unitOfWork.SaveChangesAsync();
+            await _subastaRepository.AgregarAsync(nuevaSubasta, ct);
+            await _unitOfWork.SaveChangesAsync(ct);
 
             return nuevaSubasta.Id;
         }

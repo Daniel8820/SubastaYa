@@ -14,17 +14,17 @@ namespace SubastaYa.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<Subasta?> ObtenerPorIdAsync(int id)
+        public async Task<Subasta?> ObtenerPorIdAsync(int id, CancellationToken ct = default)
         {
             
             return await _context.Subastas
                 .Include(s => s.Pujas)
-                .FirstOrDefaultAsync(s => s.Id == id);
+                .FirstOrDefaultAsync(s => s.Id == id, ct);
         }
 
-        public async Task AgregarAsync(Subasta subasta)
+        public async Task AgregarAsync(Subasta subasta, CancellationToken ct = default)
         {
-            await _context.Subastas.AddAsync(subasta);
+            await _context.Subastas.AddAsync(subasta, ct);
         }
 
         public void Actualizar(Subasta subasta)
@@ -32,34 +32,34 @@ namespace SubastaYa.Infrastructure.Repositories
             _context.Subastas.Update(subasta);
         }
 
-        public async Task<List<Domain.Entities.Subasta>> ObtenerPorVendedorIdAsync(int vendedorId)
+        public async Task<List<Domain.Entities.Subasta>> ObtenerPorVendedorIdAsync(int vendedorId, CancellationToken ct = default)
         {
             return await _context.Subastas
                 .Include(s => s.Pujas)
                 .Where(s => s.VendedorId == vendedorId)
-                .ToListAsync();
+                .ToListAsync(ct);
         }
 
-        public async Task<List<Domain.Entities.Subasta>> ObtenerPorCompradorIdAsync(int compradorId)
+        public async Task<List<Domain.Entities.Subasta>> ObtenerPorCompradorIdAsync(int compradorId, CancellationToken ct = default)
         {
             return await _context.Subastas
                 .Include(s => s.Pujas)
                 .Where(s => s.Pujas.Any(p => p.CompradorId == compradorId))
-                .ToListAsync();
+                .ToListAsync(ct);
         }
 
-        public async Task<Subasta?> ObtenerDetallePorIdAsync(int id)
+        public async Task<Subasta?> ObtenerDetallePorIdAsync(int id, CancellationToken ct = default)
         {
             return await _context.Subastas
                 .Include(s => s.Pujas)
                     .ThenInclude(p => p.Comprador)
                 .Include(s => s.Vendedor)
                 .Include(s => s.Categoria)
-                .FirstOrDefaultAsync(s => s.Id == id);
+                .FirstOrDefaultAsync(s => s.Id == id, ct);
         }
 
         public async Task<(List<Domain.Entities.Subasta> Items, int TotalItems)> ObtenerCatalogoPaginadoAsync(
-            string estado, int? categoriaId, decimal? precioMin, decimal? precioMax, string orden, int pagina, int tamañoPagina)
+            string estado, int? categoriaId, decimal? precioMin, decimal? precioMax, string orden, int pagina, int tamañoPagina, CancellationToken ct = default)
         {
             var query = _context.Subastas
                 .Include(s => s.Pujas)
@@ -105,20 +105,20 @@ namespace SubastaYa.Infrastructure.Repositories
             _context.AuditoriaLogs.Add(log);
         }
 
-        public async Task<List<Domain.Entities.Subasta>> ObtenerProgramadasParaActivarAsync(DateTime fechaActual)
+        public async Task<List<Domain.Entities.Subasta>> ObtenerProgramadasParaActivarAsync(DateTime fechaActual, CancellationToken ct = default)
         {
             return await _context.Subastas
                 .Where(s => s.Estado == "PROGRAMADA" && s.FechaInicio <= fechaActual)
-                .ToListAsync();
+                .ToListAsync(ct);
         }
 
-        public async Task<List<Domain.Entities.Subasta>> ObtenerVencidasAsync(DateTime fechaActual)
+        public async Task<List<Domain.Entities.Subasta>> ObtenerVencidasAsync(DateTime fechaActual, CancellationToken ct = default)
         {
             // Acá incluimos las Pujas porque el caso de uso las necesita para saber quién ganó
             return await _context.Subastas
                 .Include(s => s.Pujas)
                 .Where(s => s.Estado == "ACTIVA" && s.FechaFin <= fechaActual)
-                .ToListAsync();
+                .ToListAsync(ct);
         }
     }
 }

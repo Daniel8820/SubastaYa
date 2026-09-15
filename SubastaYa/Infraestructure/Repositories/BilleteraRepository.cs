@@ -14,9 +14,9 @@ namespace SubastaYa.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<Billetera> ObtenerPorUsuarioIdAsync(int usuarioId)
+        public async Task<Billetera> ObtenerPorUsuarioIdAsync(int usuarioId, CancellationToken ct = default)
         {
-            return await _context.Billeteras.FirstOrDefaultAsync(b => b.UsuarioId == usuarioId);
+            return await _context.Billeteras.FirstOrDefaultAsync(b => b.UsuarioId == usuarioId, ct);
         }
 
         public void Actualizar(Billetera billetera)
@@ -29,12 +29,12 @@ namespace SubastaYa.Infrastructure.Repositories
             _context.TransaccionesLedger.Add(transaccion);
         }
 
-        public async Task<List<TransaccionLedger>> ObtenerHistorialAsync(int billeteraId)
+        public async Task<List<TransaccionLedger>> ObtenerHistorialAsync(int billeteraId, CancellationToken ct = default)
         {
             return await _context.TransaccionesLedger
                 .Where(t => t.BilleteraId == billeteraId)
                 .OrderByDescending(t => t.Fecha)
-                .ToListAsync();
+                .ToListAsync(ct);
         }
 
         public void AgregarAuditoria(AuditoriaLog log)

@@ -15,8 +15,9 @@ namespace SubastaYa.Application.UseCases.Subastas.GetCatalogoSubastas
             _subastaRepository = subastaRepository;
         }
 
-        public async Task<CatalogoResponseDto> HandleAsync(GetCatalogoSubastasQuery query)
+        public async Task<CatalogoResponseDto> HandleAsync(GetCatalogoSubastasQuery query, CancellationToken ct = default)
         {
+                        
             if (query.Pagina < 1)
                 throw new DomainException("El número de página debe ser mayor a cero.");
 
@@ -25,7 +26,7 @@ namespace SubastaYa.Application.UseCases.Subastas.GetCatalogoSubastas
             
             var resultado = await _subastaRepository.ObtenerCatalogoPaginadoAsync(
                 query.Estado, query.CategoriaId, query.PrecioMin, query.PrecioMax,
-                query.Orden, query.Pagina, query.TamañoPagina);
+                query.Orden, query.Pagina, query.TamañoPagina, ct);
 
             return new CatalogoResponseDto
             {

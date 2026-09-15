@@ -16,11 +16,11 @@ namespace SubastaYa.Application.UseCases.Usuarios.Login
             _usuarioRepository = usuarioRepository;
         }
 
-        public async Task<LoginResponseDto> HandleAsync(LoginCommand command)
+        public async Task<LoginResponseDto> HandleAsync(LoginCommand command, CancellationToken ct = default)
         {
             string identityId = await _authService.ValidarCredencialesAsync(command.Correo, command.Password);
 
-            var usuarioDomain = await _usuarioRepository.ObtenerPorIdentityIdAsync(identityId);
+            var usuarioDomain = await _usuarioRepository.ObtenerPorIdentityIdAsync(identityId, ct);
             if (usuarioDomain == null)
                 throw new DomainException("Perfil de usuario no encontrado en el sistema.");
 

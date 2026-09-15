@@ -26,6 +26,7 @@ const Catalogo = () => {
 
     useEffect(() => {
         const context = { isMounted: true };
+        const controller = new AbortController(); // Controlador
 
         const timeoutId = setTimeout(() => {
             const obtenerSubastas = async () => {
@@ -41,7 +42,10 @@ const Catalogo = () => {
                     if (filtroPrecioMin) params.append('precioMin', filtroPrecioMin);
                     if (filtroPrecioMax) params.append('precioMax', filtroPrecioMax);
 
-                    const response = await fetch(`https://localhost:7109/api/v1/auctions?${params.toString()}`);
+                    const response = await fetch(`https://localhost:7109/api/v1/auctions?${params.toString()}`, {
+                        signal: controller.signal // Señal
+                    });
+                    
                     const data = await response.json();
                     
                     if (response.ok && context.isMounted) {
@@ -49,6 +53,7 @@ const Catalogo = () => {
                         setPaginacionInfo(data.paginacion);
                     }
                 } catch (error) {
+                    if (error.name === 'AbortError') return; // Filtro de aborto
                     console.error("Error de conexión:", error);
                 } finally {
                     if (context.isMounted) setCargando(false);
@@ -61,6 +66,7 @@ const Catalogo = () => {
         return () => {
             context.isMounted = false;
             clearTimeout(timeoutId);
+            controller.abort(); // 4. Cortamos la conexión al desmontar
         };
     }, [pagina, filtroEstado, filtroCategoria, filtroOrden, filtroPrecioMin, filtroPrecioMax]); 
 
@@ -160,7 +166,7 @@ const Catalogo = () => {
                     <button type="button" className="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
                 </div>
                 <div className="offcanvas-body">
-                    <form onSubmit={handleAplicarFiltros}>
+                    <form onSubmit={handleAplicarFiltros} autoComplete="off">
                         <div className="mb-3">
                             <label className="form-label fw-bold text-muted small">Estado</label>
                             <select className="form-select" value={inputEstado} onChange={(e) => setInputEstado(e.target.value)}>
@@ -192,7 +198,10 @@ const Catalogo = () => {
                             <div className="col-6">
                                 <label className="form-label fw-bold text-muted small">Min ($)</label>
                                 <input 
-                                    type="number" 
+                                    type="number"
+                                    id="inputPrecioMin"          
+                                    name="inputPrecioMin"        
+                                    autoComplete="off"            
                                     className="form-control" 
                                     placeholder="Ej: 1000" 
                                     value={inputPrecioMin} 
@@ -203,7 +212,10 @@ const Catalogo = () => {
                             <div className="col-6">
                                 <label className="form-label fw-bold text-muted small">Max ($)</label>
                                 <input 
-                                    type="number" 
+                                    type="number"
+                                    id="inputPrecioMax"          
+                                    name="inputPrecioMax"        
+                                    autoComplete="off"            
                                     className="form-control" 
                                     placeholder="Ej: 50000" 
                                     value={inputPrecioMax} 
