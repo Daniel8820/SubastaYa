@@ -47,6 +47,16 @@ namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
             billeteraComprador.RetenerFondos(command.Monto);
             _billeteraRepository.Actualizar(billeteraComprador);
 
+            // Registro de la retención para el nuevo comprador
+            _billeteraRepository.AgregarTransaccion(new TransaccionLedger
+            {
+                BilleteraId = billeteraComprador.Id,
+                Tipo = "RETENCION",
+                Monto = command.Monto,
+                Fecha = DateTime.UtcNow,
+                SubastaId = subasta.Id
+            });
+
             if (pujaGanadoraAnterior != null)
             {
                 var billeteraAnterior = await _billeteraRepository.ObtenerPorUsuarioIdAsync(pujaGanadoraAnterior.CompradorId, ct);
@@ -54,6 +64,16 @@ namespace SubastaYa.Application.UseCases.Subastas.RegistrarPuja
                 {
                     billeteraAnterior.LiberarGarantia(pujaGanadoraAnterior.Monto);
                     _billeteraRepository.Actualizar(billeteraAnterior);
+
+                    // Registro de la liberación para el comprador anterior
+                    _billeteraRepository.AgregarTransaccion(new TransaccionLedger
+                    {
+                        BilleteraId = billeteraAnterior.Id,
+                        Tipo = "LIBERACION",
+                        Monto = pujaGanadoraAnterior.Monto,
+                        Fecha = DateTime.UtcNow,
+                        SubastaId = subasta.Id
+                    });
                 }
             }
 

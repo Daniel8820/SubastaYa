@@ -1,11 +1,14 @@
-﻿using SubastaYa.Application.UseCases.Subastas.CancelarSubasta;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using SubastaYa.Application.Interfaces.Persistence;
+using SubastaYa.Application.Interfaces.Services;
+using SubastaYa.Application.UseCases.Subastas.CancelarSubasta;
 using SubastaYa.Application.UseCases.Subastas.CrearSubasta;
 using SubastaYa.Application.UseCases.Subastas.GetCatalogoSubastas;
 using SubastaYa.Application.UseCases.Subastas.GetSubastaById;
 using SubastaYa.Application.UseCases.Subastas.RegistrarPuja;
-using SubastaYa.Application.Interfaces.Services;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using SubastaYa.Domain.Entities;
+using SubastaYa.Domain.Exceptions;
 
 namespace SubastaYa.Api.Controllers
 {
@@ -35,11 +38,42 @@ namespace SubastaYa.Api.Controllers
             command.CompradorNombre = _currentUser.Nombre;
             command.SubastaId = id;
 
-            // Delegamos la acción completamente al Handler
-            await handler.HandleAsync(command, ct);
+            try
+            {
+                // Delegamos la acción al Handler
+                await handler.HandleAsync(command, ct);
 
-            // Si llegamos hasta acá, no hubo excepciones de concurrencia ni de dominio
-            return Ok(new { mensaje = "Puja registrada exitosamente. Saldo retenido temporalmente." });
+                // Si llegamos hasta acá, no hubo excepciones de concurrencia ni de dominio
+                return Ok(new { mensaje = "Puja registrada exitosamente. Saldo retenido temporalmente." });
+            }
+            catch (Exception ex) when (ex is DomainException || ex is ConcurrencyDomainException)
+            {
+                // Registrar intentos fallidos en Auditoría
+                var scopeFactory = HttpContext.RequestServices.GetRequiredService<IServiceScopeFactory>();
+                using (var scope = scopeFactory.CreateScope())
+                {
+                    var auditRepo = scope.ServiceProvider.GetRequiredService<ISubastaRepository>();
+                    var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+
+                    string tipoAccion = ex is ConcurrencyDomainException ? "RECHAZO_CONCURRENCIA" : "RECHAZO_NEGOCIO";
+
+                    auditRepo.AgregarAuditoria(new AuditoriaLog
+                    {
+                        Entidad = "SUBASTA",
+                        EntidadId = id,
+                        Accion = tipoAccion,
+                        UsuarioId = _currentUser.UsuarioId,
+                        DetalleJson = $"{{ \"montoIntentado\": {command.Monto}, \"motivo\": \"{ex.Message}\" }}",
+                        Fecha = DateTime.UtcNow
+                    });
+
+                    await uow.SaveChangesAsync(ct);
+                }
+
+                // Volvemos a lanzar la excepción original para que el ExceptionMiddleware 
+                // se encargue de devolver el 409 Conflict o 400 Bad Request al Frontend
+                throw;
+            }
         }
 
         [Authorize]
