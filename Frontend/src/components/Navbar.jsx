@@ -79,7 +79,7 @@ const Navbar = () => {
         
         <>
             {/* NavBar superior */}
-            <nav className="navbar navbar-expand-lg navbar-dark sticky-top mb-4 shadow-sm py-3" style={{ background: 'linear-gradient(90deg, #0d6efd 0%, #0099ff 100%)' }}>
+            <nav className="navbar navbar-expand-lg navbar-dark sticky-top mb-4 shadow-sm py-3" style={{ background: 'linear-gradient(90deg, #0d6efd 0%, #0099ff 100%)', zIndex: 1030 }}>
                 <div className="container">
                     
                     {/* Logo y marca más grandes */}

@@ -207,6 +207,7 @@ const Catalogo = () => {
                                     value={inputPrecioMin} 
                                     onChange={(e) => setInputPrecioMin(e.target.value)} 
                                     onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
+                                    min="0"
                                 />
                             </div>
                             <div className="col-6">
@@ -221,6 +222,7 @@ const Catalogo = () => {
                                     value={inputPrecioMax} 
                                     onChange={(e) => setInputPrecioMax(e.target.value)} 
                                     onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
+                                    min="0"
                                 />
                             </div>
                         </div>

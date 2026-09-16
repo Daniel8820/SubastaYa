@@ -135,6 +135,19 @@ const Detalle = () => {
     
     const handlePujar = async (e) => {
         e.preventDefault();
+        const montoNumerico = parseFloat(montoPuja);
+        const minimoRequerido = subasta.historialPujas.length > 0 
+            ? subasta.historialPujas[0].monto + subasta.incrementoMinimo 
+            : subasta.precioBase;
+
+        if (montoNumerico <= 0) {
+            toast.error("El monto no puede ser negativo o cero.");
+            return;
+        }
+        if (montoNumerico < minimoRequerido) {
+            toast.error(`La oferta debe ser de al menos $${minimoRequerido}`);
+            return;
+        }
         setEnviando(true);
 
         const token = localStorage.getItem('token');
@@ -356,7 +369,7 @@ const Detalle = () => {
                 </div>
 
                 <div className="col-md-4 mt-4 mt-md-0">
-                    <div className="card shadow-sm border-primary sticky-top" style={{top: '20px'}}>
+                    <div className="card shadow-sm border-primary sticky-top" style={{ top: '100px', zIndex: 1 }}>
                         <div className="card-body text-center">
                             <h4 className="text-primary mb-3">Consola de Ofertas</h4>
                             
@@ -420,6 +433,7 @@ const Detalle = () => {
                                                 onChange={(e) => setMontoPuja(e.target.value)}
                                                 onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
                                                 step="0.01"
+                                                min={ofertaMasAlta ? ofertaMasAlta.monto + subasta.incrementoMinimo : subasta.precioBase}
                                                 required
                                                 disabled={enviando || subasta.estado !== 'ACTIVA' || soyLider}
                                             />
