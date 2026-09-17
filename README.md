@@ -15,13 +15,13 @@ docker-compose up -d
 
 (Asegurarse de tener el puerto 1433 libre para SQL Server).
 
-### 2. Configuración de Secretos y Backend (.NET 8)
+### 2. Configuración de Secretos de Usuario y Backend (.NET 8)
 
 Para cumplir con las normativas de seguridad, la cadena de conexión no está versionada en el código fuente.
   
-1. Abrir una terminal dentro de la carpeta SubastaYa/SubastaYa/ y ejecutar el siguiente comando para inyectar la configuración localmente en la bóveda de secretos:
+1. Abrir una terminal dentro de la carpeta SubastaYa/SubastaYa/ y ejecutar el siguiente comando para inyectar la configuración localmente en los secretos de usuario:
 
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost,1433;Database=SubastaYaDb;User Id=sa;Password=SubastaYa_2026!;TrustServerCertificate=True;"
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost,1433;Database=SubastaYaDb;User Id=sa;Password=MiSqlServer2026!;TrustServerCertificate=True;"
 
 2. Abrir la solución SubastaYa.slnx en Visual Studio 2026.  
 3. Abrir la Consola del Administrador de Paquetes (Package Manager Console). 
@@ -34,21 +34,22 @@ Update-Database
 
 ### 3. Frontend (React + Vite)
 
-1. Abrir Visual Studio Code en la carpeta Frontend/
-2. Abrir una terminal integrada e instalar las dependencias:
+1. Instalar Node.js desde la url https://nodejs.org/es
+2. Abrir Visual Studio Code en la carpeta Frontend/
+3. Abrir una terminal integrada e instalar las dependencias:
 
-npm install
+-> npm install
 
-3. Levantar el servidor de desarrollo:
+4. Levantar el servidor de desarrollo:
 
-npm run dev
+-> npm run dev
 
-(La aplicación estará disponible en http://localhost:5173
+(La aplicación estará disponible en http://localhost:5173)
 
 🧪 Usuarios de Prueba
 
 Todos los usuarios de prueba tienen como contraseña predeterminada: Clave123!
 
--> comprador1@test.com (Posee saldo en la billetera listo para pujar
+-> comprador1@test.com (Posee saldo en la billetera listo para pujar)
 
--> vendedor@test.com (Posee subastas publicadas
+-> vendedor@test.com (Posee subastas publicadas)
